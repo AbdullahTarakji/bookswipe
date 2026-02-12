@@ -132,6 +132,24 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> googleSignIn(String idToken) async {
+    final response = await _dio.post('/api/auth/google', data: {
+      'id_token': idToken,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> appleSignIn({
+    required String authorizationCode,
+    required String identityToken,
+  }) async {
+    final response = await _dio.post('/api/auth/apple', data: {
+      'authorization_code': authorizationCode,
+      'identity_token': identityToken,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     final response = await _dio.post('/api/auth/refresh', data: {
       'refresh_token': refreshToken,

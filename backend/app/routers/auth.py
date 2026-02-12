@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import (
+    AppleAuthRequest,
+    GoogleAuthRequest,
     MessageResponse,
     TokenRefresh,
     TokenResponse,
@@ -26,9 +29,38 @@ from app.services.auth import (
     oauth2_scheme,
     verify_password,
 )
+from app.services.oauth import verify_apple_token, verify_google_token
 
+logger = logging.getLogger("bookswipe")
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _get_or_create_oauth_user(db: Session, email: str, provider: str, provider_id: str) -> User:
+    """Find existing user by email or create a new one for OAuth login.
+
+    If user exists with same email from a different provider, link accounts
+    by updating provider fields (same email = same account).
+    """
+    user = db.query(User).filter(User.email == email, User.is_active.is_(True)).first()
+    if user:
+        # Link: update provider info if this is a different provider
+        if user.auth_provider == "email" or user.auth_provider != provider:
+            user.auth_provider = provider
+            user.provider_id = provider_id
+            db.commit()
+        return user
+    # Create new user (no password for OAuth users)
+    user = User(
+        email=email,
+        hashed_password="",
+        auth_provider=provider,
+        provider_id=provider_id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -61,6 +93,50 @@ def login(request: Request, body: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+@router.post("/google", response_model=TokenResponse)
+@limiter.limit("5/minute")
+def google_auth(request: Request, body: GoogleAuthRequest, db: Session = Depends(get_db)):
+    try:
+        google_user = verify_google_token(body.id_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    user = _get_or_create_oauth_user(
+        db,
+        email=google_user["email"],
+        provider="google",
+        provider_id=google_user["sub"],
+    )
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+@router.post("/apple", response_model=TokenResponse)
+@limiter.limit("5/minute")
+def apple_auth(request: Request, body: AppleAuthRequest, db: Session = Depends(get_db)):
+    try:
+        apple_user = verify_apple_token(body.identity_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    user = _get_or_create_oauth_user(
+        db,
+        email=apple_user["email"],
+        provider="apple",
+        provider_id=apple_user["sub"],
+    )
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),

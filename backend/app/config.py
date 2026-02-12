@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["*"]
 
+    # OAuth
+    google_client_id: str = ""
+    apple_client_id: str = ""
+
     # Password policy
     password_min_length: int = 8
 
