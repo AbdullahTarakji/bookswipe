@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+"""Book discovery, liking, skipping, and detail endpoints."""
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.exceptions import ConflictError, NotFoundError
 from app.models import LikedBook, SkippedBook, User
 from app.schemas import (
     BookAction,
@@ -25,6 +28,7 @@ async def discover_books(
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
+    """Return paginated books from Google Books, excluding already-seen ones."""
     exclude_ids: set[str] = set()
     user_id: int | None = None
     if current_user:
@@ -54,6 +58,7 @@ def get_liked_books(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Return the authenticated user's liked books, paginated."""
     query = db.query(LikedBook).filter(LikedBook.user_id == current_user.id)
     total = query.count()
     books = (
@@ -70,6 +75,7 @@ async def get_book_detail(
     book_id: str,
     current_user: User | None = Depends(get_optional_user),
 ):
+    """Return detailed information about a single book by Google Books ID."""
     user_id = current_user.id if current_user else None
     return await get_book_by_id(book_id, user_id=user_id)
 
@@ -80,6 +86,7 @@ def like_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Add a book to the authenticated user's liked collection."""
     existing = (
         db.query(LikedBook)
         .filter(
@@ -89,10 +96,7 @@ def like_book(
         .first()
     )
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Book already liked",
-        )
+        raise ConflictError(message="Book already liked")
     liked = LikedBook(
         user_id=current_user.id,
         google_book_id=body.google_book_id,
@@ -112,6 +116,7 @@ def skip_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Record that the authenticated user skipped a book."""
     existing = (
         db.query(SkippedBook)
         .filter(
@@ -137,6 +142,7 @@ def unlike_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Remove a book from the authenticated user's liked collection."""
     liked = (
         db.query(LikedBook)
         .filter(
@@ -146,10 +152,7 @@ def unlike_book(
         .first()
     )
     if not liked:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Liked book not found",
-        )
+        raise NotFoundError(message="Liked book not found")
     db.delete(liked)
     db.commit()
     return MessageResponse(message="Book removed from liked list")

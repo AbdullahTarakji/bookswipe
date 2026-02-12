@@ -1,7 +1,9 @@
+"""Authentication service: JWT creation, validation, password hashing."""
+
 import datetime
 import uuid
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -9,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.exceptions import AuthError
 from app.models import BlacklistedToken, User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -16,14 +19,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 
 def hash_password(password: str) -> str:
+    """Hash a plaintext password using bcrypt."""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plaintext password against a bcrypt hash."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(user_id: int) -> str:
+    """Create a short-lived JWT access token for the given user."""
     expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         minutes=settings.access_token_expire_minutes
     )
@@ -42,6 +48,7 @@ def create_access_token(user_id: int) -> str:
 
 
 def create_refresh_token(user_id: int) -> str:
+    """Create a long-lived JWT refresh token for the given user."""
     expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         days=settings.refresh_token_expire_days
     )
@@ -60,6 +67,10 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def decode_token(token: str, expected_type: str = "access", db: Session | None = None) -> int:
+    """Decode and validate a JWT token, returning the user ID.
+
+    Raises AuthError on invalid, expired, revoked, or wrong-type tokens.
+    """
     try:
         payload = jwt.decode(
             token,
@@ -69,35 +80,19 @@ def decode_token(token: str, expected_type: str = "access", db: Session | None =
             issuer=settings.jwt_issuer,
         )
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthError(message="Invalid or expired token")
     if payload.get("type") != expected_type:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token type",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthError(message="Invalid token type")
     user_id = payload.get("sub")
     if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthError(message="Invalid token")
 
     # Check token blacklist
     jti = payload.get("jti")
     if jti and db:
         blacklisted = db.query(BlacklistedToken).filter(BlacklistedToken.jti == jti).first()
         if blacklisted:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise AuthError(message="Token has been revoked")
 
     return int(user_id)
 
@@ -126,20 +121,13 @@ def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """FastAPI dependency: extract and validate the current authenticated user."""
     if token is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthError(message="Not authenticated")
     user_id = decode_token(token, expected_type="access", db=db)
     user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthError(message="User not found")
     return user
 
 
@@ -147,10 +135,11 @@ def get_optional_user(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
+    """FastAPI dependency: return the current user if authenticated, else None."""
     if token is None:
         return None
     try:
         user_id = decode_token(token, expected_type="access", db=db)
-    except HTTPException:
+    except AuthError:
         return None
     return db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()

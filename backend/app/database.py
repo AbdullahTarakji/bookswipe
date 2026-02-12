@@ -1,3 +1,5 @@
+"""Database engine, session factory, and base model for SQLAlchemy ORM."""
+
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 

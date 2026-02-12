@@ -1,7 +1,10 @@
+"""Application configuration loaded from environment variables."""
+
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    """BookSwipe application settings, loaded from .env file or environment."""
     app_name: str = "BookSwipe API"
     app_version: str = "1.0.0"
     debug: bool = False

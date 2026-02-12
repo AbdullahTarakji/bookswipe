@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM models and seed data for the BookSwipe database."""
+
 import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, func

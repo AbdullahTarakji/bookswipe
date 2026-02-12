@@ -1,3 +1,5 @@
+"""Pydantic request/response schemas with validation and sanitization."""
+
 import datetime
 import re
 

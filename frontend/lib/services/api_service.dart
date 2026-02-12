@@ -1,9 +1,20 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import '../models/book.dart';
 
+/// HTTP client for all BookSwipe API interactions.
+///
+/// Includes automatic token refresh, retry with exponential backoff
+/// for transient network errors, and user-friendly error formatting.
 class ApiService {
   final Dio _dio;
   String? _refreshToken;
+
+  /// Maximum number of retry attempts for transient errors.
+  static const int maxRetries = 3;
+
+  /// Callback invoked when tokens are refreshed via the interceptor.
   Future<void> Function(String refreshToken)? onTokenRefreshNeeded;
 
   ApiService({String? baseUrl, Dio? dio})
@@ -16,6 +27,7 @@ class ApiService {
           receiveTimeout: const Duration(seconds: 10),
           headers: {'Content-Type': 'application/json'},
         )) {
+    _dio.interceptors.add(_RetryInterceptor(_dio));
     _dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) async {
         if (error.response?.statusCode == 401 && _refreshToken != null) {
@@ -24,7 +36,6 @@ class ApiService {
               '/api/auth/refresh',
               data: {'refresh_token': _refreshToken},
               options: Options(headers: {
-                // Don't send the expired token for refresh
                 'Authorization': null,
               }),
             );
@@ -37,7 +48,6 @@ class ApiService {
               await onTokenRefreshNeeded!(newRefreshToken);
             }
 
-            // Retry the original request with new token
             final opts = error.requestOptions;
             opts.headers['Authorization'] = 'Bearer $newToken';
             final response = await _dio.fetch(opts);
@@ -139,17 +149,31 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
-  /// Format a DioException into a user-friendly message
+  /// Format a DioException into a user-friendly message.
+  ///
+  /// Handles the structured error format `{"error": {"message": ...}}` from
+  /// the backend, as well as the legacy `{"detail": ...}` format and raw
+  /// HTTP status codes.
   static String formatError(DioException e) {
     if (e.response != null) {
       final data = e.response!.data;
-      if (data is Map<String, dynamic> && data.containsKey('detail')) {
-        final detail = data['detail'];
-        if (detail is String) return detail;
-        if (detail is List && detail.isNotEmpty) {
-          return detail.map((d) => d['msg'] ?? d.toString()).join(', ');
+      if (data is Map<String, dynamic>) {
+        // New structured error format
+        if (data.containsKey('error')) {
+          final error = data['error'];
+          if (error is Map<String, dynamic> && error.containsKey('message')) {
+            return error['message'] as String;
+          }
         }
-        return detail.toString();
+        // Legacy detail format
+        if (data.containsKey('detail')) {
+          final detail = data['detail'];
+          if (detail is String) return detail;
+          if (detail is List && detail.isNotEmpty) {
+            return detail.map((d) => d['msg'] ?? d.toString()).join(', ');
+          }
+          return detail.toString();
+        }
       }
       final statusCode = e.response!.statusCode;
       if (statusCode == 401) return 'Please log in to continue';
@@ -173,5 +197,47 @@ class ApiService {
       default:
         return 'Network error. Please try again';
     }
+  }
+}
+
+/// Dio interceptor that retries failed requests with exponential backoff.
+///
+/// Only retries on transient network errors (timeouts, connection errors).
+/// Auth errors and client errors (4xx) are not retried.
+class _RetryInterceptor extends Interceptor {
+  final Dio _dio;
+
+  _RetryInterceptor(this._dio);
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (!_shouldRetry(err)) {
+      return handler.next(err);
+    }
+
+    final retryCount = err.requestOptions.extra['retryCount'] as int? ?? 0;
+    if (retryCount >= ApiService.maxRetries) {
+      return handler.next(err);
+    }
+
+    final delay = Duration(
+      milliseconds: (pow(2, retryCount) * 500).toInt(),
+    );
+    await Future.delayed(delay);
+
+    try {
+      err.requestOptions.extra['retryCount'] = retryCount + 1;
+      final response = await _dio.fetch(err.requestOptions);
+      return handler.resolve(response);
+    } on DioException catch (e) {
+      return handler.next(e);
+    }
+  }
+
+  bool _shouldRetry(DioException err) {
+    return err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.connectionError;
   }
 }
