@@ -2,7 +2,9 @@
 
 import datetime
 
+import httpx
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -88,6 +90,35 @@ def get_liked_books(
     repo = BookRepository(db)
     books, total = repo.get_liked_books(current_user.id, page, page_size)
     return PaginatedLikedBooks(books=books, total=total, page=page, page_size=page_size)
+
+
+@router.api_route("/cover-proxy/{book_id}", methods=["GET", "HEAD"])
+async def cover_proxy(book_id: str):
+    """Proxy Google Books cover images — fetches highest quality available."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        # Fetch volume details to get all image links
+        vol_resp = await client.get(f"https://www.googleapis.com/books/v1/volumes/{book_id}")
+        if vol_resp.status_code != 200:
+            raise NotFoundError("Book not found")
+        vol_data = vol_resp.json()
+        image_links = vol_data.get("volumeInfo", {}).get("imageLinks", {})
+
+        # Try each quality level, verify it's a real image (>5KB)
+        for key in ("large", "medium", "small", "thumbnail", "smallThumbnail"):
+            url = image_links.get(key, "")
+            if not url:
+                continue
+            if url.startswith("http://"):
+                url = "https://" + url[7:]
+            img_resp = await client.get(url)
+            if img_resp.status_code == 200 and len(img_resp.content) > 5000:
+                return Response(
+                    content=img_resp.content,
+                    media_type=img_resp.headers.get("content-type", "image/jpeg"),
+                    headers={"Cache-Control": "public, max-age=86400"},
+                )
+
+        raise NotFoundError("No cover image available")
 
 
 @router.get("/{book_id}", response_model=BookDetail)

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 
@@ -23,16 +22,19 @@ class BookCard extends StatelessWidget {
               child: Hero(
                 tag: 'book-cover-${book.id}',
                 child: book.thumbnailUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: book.highResThumbnail,
+                    ? Image.network(
+                        book.highResThumbnail,
                         fit: BoxFit.cover,
-                        placeholder: (_, _) => Container(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(
-                            child: Icon(Icons.book, size: 64),
-                          ),
-                        ),
-                        errorWidget: (_, _, _) => Container(
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.book, size: 64),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, _, _) => Container(
                           color: theme.colorScheme.surfaceContainerHighest,
                           child: const Center(
                             child: Icon(Icons.broken_image, size: 64),

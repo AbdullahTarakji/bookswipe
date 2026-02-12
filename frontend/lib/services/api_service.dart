@@ -9,7 +9,7 @@ class ApiService {
   String? _refreshToken;
 
   /// Callback invoked when the auth token is refreshed so the caller can persist it.
-  Future<void> Function(String refreshToken)? onTokenRefreshNeeded;
+  Future<void> Function(String accessToken, String refreshToken)? onTokenRefreshNeeded;
 
   /// Maximum number of automatic retries for network errors.
   static const int maxRetries = 3;
@@ -17,13 +17,19 @@ class ApiService {
   /// Base delay for exponential backoff (doubles with each retry).
   static const Duration baseRetryDelay = Duration(milliseconds: 500);
 
+  /// Derive the API base URL from the current page origin (same host, port 8000).
+  static String get _defaultBaseUrl {
+    const env = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (env.isNotEmpty) return env;
+    // On web, use the same host but port 8000
+    final uri = Uri.base;
+    return '${uri.scheme}://${uri.host}:8000';
+  }
+
   /// Creates an [ApiService] with an optional [baseUrl] or pre-configured [dio] instance.
   ApiService({String? baseUrl, Dio? dio})
       : _dio = dio ?? Dio(BaseOptions(
-          baseUrl: baseUrl ?? const String.fromEnvironment(
-            'API_BASE_URL',
-            defaultValue: 'http://localhost:8000',
-          ),
+          baseUrl: baseUrl ?? _defaultBaseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
           headers: {'Content-Type': 'application/json'},
@@ -32,13 +38,16 @@ class ApiService {
       onError: (error, handler) async {
         if (error.response?.statusCode == 401 && _refreshToken != null) {
           try {
-            final refreshResponse = await _dio.post(
+            // Use a fresh Dio instance so the expired Authorization header is not sent
+            final refreshDio = Dio(BaseOptions(
+              baseUrl: _dio.options.baseUrl,
+              connectTimeout: _dio.options.connectTimeout,
+              receiveTimeout: _dio.options.receiveTimeout,
+              headers: {'Content-Type': 'application/json'},
+            ));
+            final refreshResponse = await refreshDio.post(
               '/api/auth/refresh',
               data: {'refresh_token': _refreshToken},
-              options: Options(headers: {
-                // Don't send the expired token for refresh
-                'Authorization': null,
-              }),
             );
             final newToken = refreshResponse.data['access_token'] as String;
             final newRefreshToken = refreshResponse.data['refresh_token'] as String;
@@ -46,7 +55,7 @@ class ApiService {
             _refreshToken = newRefreshToken;
 
             if (onTokenRefreshNeeded != null) {
-              await onTokenRefreshNeeded!(newRefreshToken);
+              await onTokenRefreshNeeded!(newToken, newRefreshToken);
             }
 
             // Retry the original request with new token

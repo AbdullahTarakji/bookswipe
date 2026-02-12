@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+// cached_network_image removed — using Image.network for web compatibility
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/book.dart';
@@ -46,14 +46,10 @@ class BookDetailScreen extends ConsumerWidget {
             background: Hero(
               tag: 'book-cover-${book.id}',
               child: book.thumbnailUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: book.highResThumbnail,
+                  ? Image.network(
+                      book.highResThumbnail,
                       fit: BoxFit.cover,
-                      placeholder: (_, _) => Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(child: Icon(Icons.book, size: 80)),
-                      ),
-                      errorWidget: (_, _, _) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
                         child: const Center(child: Icon(Icons.broken_image, size: 80)),
                       ),

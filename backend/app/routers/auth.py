@@ -49,7 +49,7 @@ def _get_or_create_oauth_user(repo: UserRepository, email: str, provider: str, p
     user = repo.get_by_email(email)
     if user:
         # Link: update provider info if this is a different provider
-        if user.auth_provider == "email" or user.auth_provider != provider:
+        if user.auth_provider != provider:
             repo.update_provider(user, provider, provider_id)
         return user
     # Create new user (no password for OAuth users)

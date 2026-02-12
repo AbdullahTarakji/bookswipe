@@ -71,8 +71,9 @@ class Settings(BaseSettings):
     prometheus_enabled: bool = True
     log_level: str = "INFO"
 
-    # Redis (optional, for arq workers and caching)
-    redis_url: str = ""
+    # Admin seeding
+    admin_email: str = ""
+    admin_password: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

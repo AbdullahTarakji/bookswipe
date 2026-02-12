@@ -11,6 +11,8 @@ from app.schemas import BookDetail, BookSummary
 from app.services.cache import cache_get, cache_set
 
 _rate_limits: dict[int, list[float]] = {}
+_last_eviction: float = 0.0
+_EVICTION_INTERVAL: float = 300.0  # purge stale entries every 5 minutes
 
 
 def _check_rate_limit(user_id: int | None) -> None:
@@ -19,6 +21,15 @@ def _check_rate_limit(user_id: int | None) -> None:
         return
     now = time.time()
     window = settings.rate_limit_window
+
+    # Periodically evict stale user entries to prevent unbounded growth
+    global _last_eviction
+    if now - _last_eviction > _EVICTION_INTERVAL:
+        stale_keys = [k for k, v in _rate_limits.items() if not v or now - v[-1] >= window]
+        for k in stale_keys:
+            del _rate_limits[k]
+        _last_eviction = now
+
     key = user_id
     timestamps = _rate_limits.get(key, [])
     timestamps = [t for t in timestamps if now - t < window]
@@ -36,6 +47,10 @@ def _parse_book_summary(item: dict[str, Any]) -> BookSummary:
     # Upgrade to HTTPS
     if thumbnail.startswith("http://"):
         thumbnail = "https://" + thumbnail[7:]
+    # Use cover-proxy with book ID for high-res image lookup
+    book_id = item.get("id", "")
+    if book_id:
+        thumbnail = f"/api/books/cover-proxy/{book_id}"
     return BookSummary(
         google_book_id=item["id"],
         title=info.get("title", "Unknown"),
@@ -54,6 +69,9 @@ def _parse_book_detail(item: dict[str, Any]) -> BookDetail:
     thumbnail = image_links.get("thumbnail", image_links.get("smallThumbnail", ""))
     if thumbnail.startswith("http://"):
         thumbnail = "https://" + thumbnail[7:]
+    book_id = item.get("id", "")
+    if book_id:
+        thumbnail = f"/api/books/cover-proxy/{book_id}"
     return BookDetail(
         google_book_id=item["id"],
         title=info.get("title", "Unknown"),

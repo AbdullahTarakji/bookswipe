@@ -49,19 +49,31 @@ def seed_categories(db: Session) -> None:
 
 
 def seed_admin(db: Session) -> None:
-    """Create a default admin user if no admin exists."""
+    """Create a default admin user if no admin exists.
+
+    Reads credentials from ADMIN_EMAIL / ADMIN_PASSWORD env vars.
+    Skips seeding if either is unset so that production never creates an
+    account with hardcoded credentials.
+    """
+    import os
+
+    admin_email = os.environ.get("ADMIN_EMAIL")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_email or not admin_password:
+        logger.debug("ADMIN_EMAIL/ADMIN_PASSWORD not set — skipping admin seed")
+        return
     admin_exists = db.query(User).filter(User.role == "admin").first()
     if admin_exists:
         return
     admin_user = User(
-        email="admin@bookswipe.app",
-        hashed_password=hash_password("AdminPass123"),
+        email=admin_email,
+        hashed_password=hash_password(admin_password),
         role="admin",
         auth_provider="email",
     )
     db.add(admin_user)
     db.commit()
-    logger.info("Default admin user seeded: admin@bookswipe.app")
+    logger.info("Admin user seeded: %s", admin_email)
 
 
 @asynccontextmanager

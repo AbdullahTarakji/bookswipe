@@ -32,8 +32,19 @@ class Book {
 
   String get authorsText => authors.join(', ');
 
-  String get highResThumbnail =>
-      thumbnailUrl?.replaceAll('zoom=1', 'zoom=2') ?? '';
+  String get highResThumbnail {
+    if (thumbnailUrl == null || thumbnailUrl!.isEmpty) return '';
+    final url = thumbnailUrl!;
+    // Proxy URLs are relative — prepend API base
+    if (url.startsWith('/api/')) {
+      const env = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+      if (env.isNotEmpty) return '$env$url';
+      // Dev fallback: same host, port 8000
+      final uri = Uri.base;
+      return '${uri.scheme}://${uri.host}:8000$url';
+    }
+    return url;
+  }
 
   Book copyWith({
     String? id,

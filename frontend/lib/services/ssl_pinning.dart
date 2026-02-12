@@ -50,7 +50,7 @@ class SslPinning {
   /// certificate validation (never disable in production).
   static Dio createPinnedDio({
     required String baseUrl,
-    bool enablePinning = true,
+    bool enablePinning = false,
   }) {
     final dio = Dio(
       BaseOptions(
@@ -88,18 +88,17 @@ class SslPinning {
 extension X509CertificateFingerprint on X509Certificate {
   /// Returns the SHA-256 fingerprint of the DER-encoded certificate as a
   /// colon-separated uppercase hex string.
+  ///
+  /// TODO: Add `crypto: ^3.0.0` to pubspec.yaml and uncomment the real
+  /// implementation before enabling SSL pinning in production.
   String get sha256Fingerprint {
-    // The `der` property gives us the raw DER bytes of the certificate.
-    // We rely on Dart's crypto or a similar mechanism to hash them.
-    // For a production implementation you would use:
-    //   import 'package:crypto/crypto.dart';
-    //   final digest = sha256.convert(der);
-    //   return digest.bytes.map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase()).join(':');
-    //
-    // Placeholder: returns empty string until crypto dependency is wired up.
-    final bytes = der;
-    return bytes
-        .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .join(':');
+    // Requires: import 'package:crypto/crypto.dart';
+    // final digest = sha256.convert(der);
+    // return digest.bytes
+    //     .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+    //     .join(':');
+    throw UnimplementedError(
+      'Add the crypto package and implement SHA-256 hashing before enabling SSL pinning',
+    );
   }
 }

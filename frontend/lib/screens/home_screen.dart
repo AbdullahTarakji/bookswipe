@@ -155,9 +155,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         onSwipe: (previousIndex, currentIndex, direction) {
           _onSwipe(books[previousIndex], direction);
-          if (currentIndex != null && currentIndex >= books.length - 2) {
-            ref.read(discoverBooksProvider.notifier).loadMore();
-          }
+          final remaining = currentIndex == null ? 0 : books.length - currentIndex;
+          ref.read(discoverBooksProvider.notifier).maybeLoadMore(remaining);
           return true;
         },
         onEnd: () {

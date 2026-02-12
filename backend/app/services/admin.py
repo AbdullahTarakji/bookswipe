@@ -95,18 +95,24 @@ def delete_user(db: Session, user_id: int, current_admin: User) -> None:
 
 
 def get_analytics(db: Session) -> dict:
-    """Gather analytics data for the admin dashboard."""
+    """Gather analytics data for the admin dashboard.
+
+    Uses a batched counts query (3 DB round-trips instead of 6) for the
+    simple numeric stats, plus individual queries for growth/categories/users.
+    """
     repo = AdminRepository(db)
     now = datetime.datetime.now(datetime.timezone.utc)
     seven_days_ago = now - datetime.timedelta(days=7)
 
+    counts = repo.get_counts_summary(active_since=seven_days_ago)
+
     return {
-        "total_users": repo.get_total_users(),
-        "active_users_7d": repo.get_active_users(seven_days_ago),
-        "banned_users": repo.get_banned_users_count(),
-        "admin_users": repo.get_admin_users_count(),
-        "total_likes": repo.get_total_likes(),
-        "total_skips": repo.get_total_skips(),
+        "total_users": counts["total_users"],
+        "active_users_7d": counts["active_users"],
+        "banned_users": counts["banned_users"],
+        "admin_users": counts["admin_users"],
+        "total_likes": counts["total_likes"],
+        "total_skips": counts["total_skips"],
         "user_growth": repo.get_user_growth(30),
         "popular_categories": repo.get_popular_categories(10),
         "recent_users": [

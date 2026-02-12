@@ -101,6 +101,30 @@ class AdminRepository:
         """Return total number of skipped books."""
         return self.db.query(SkippedBook).count()
 
+    def get_counts_summary(self, active_since: datetime.datetime) -> dict:
+        """Return all dashboard counts in 3 queries instead of 6.
+
+        Batches the 4 User-table COUNTs into a single conditional-count query.
+        """
+        user_row = self.db.query(
+            func.count(User.id).label("total"),
+            func.count(User.id).filter(User.created_at >= active_since).label("active"),
+            func.count(User.id).filter(User.is_banned.is_(True)).label("banned"),
+            func.count(User.id).filter(User.role == "admin").label("admins"),
+        ).one()
+
+        total_likes = self.db.query(func.count(LikedBook.id)).scalar() or 0
+        total_skips = self.db.query(func.count(SkippedBook.id)).scalar() or 0
+
+        return {
+            "total_users": user_row.total,
+            "active_users": user_row.active,
+            "banned_users": user_row.banned,
+            "admin_users": user_row.admins,
+            "total_likes": total_likes,
+            "total_skips": total_skips,
+        }
+
     def get_user_growth(self, days: int = 30) -> list[dict]:
         """Return daily user registration counts for the last N days."""
         cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
@@ -117,32 +141,17 @@ class AdminRepository:
         return [{"date": str(row.date), "count": row.count} for row in rows]
 
     def get_popular_categories(self, limit: int = 10) -> list[dict]:
-        """Return the most popular categories based on liked book counts."""
-        # Join liked books with categories based on title patterns is complex,
-        # so we count likes per category from the Category table vs LikedBooks
-        categories = self.db.query(Category).all()
-        result = []
-        for cat in categories:
-            count = (
-                self.db.query(LikedBook)
-                .filter(LikedBook.title.isnot(None))
-                .count()
-            )
-            result.append({"name": cat.name, "count": count})
+        """Return categories with the total number of liked books.
 
-        # Since we can't reliably map liked books to categories without the
-        # Google Books API, we'll provide category counts from likes overall
-        # divided roughly. For a real implementation this would use a cached
-        # category field on LikedBook. For now return category names with
-        # total likes divided for demonstration.
+        NOTE: LikedBook has no category column, so we cannot map individual
+        likes to categories.  We return each category alongside the global
+        like count so the admin dashboard has *something* to show.  To get
+        real per-category stats, add a ``category`` column to LikedBook and
+        populate it at like-time from the Google Books metadata.
+        """
+        categories = self.db.query(Category).limit(limit).all()
         total_likes = self.get_total_likes()
-        n = len(categories) if categories else 1
-        result = []
-        for i, cat in enumerate(categories[:limit]):
-            # Distribute likes with some variance for visual interest
-            share = max(1, total_likes // n + (i % 3))
-            result.append({"name": cat.name, "count": share})
-        return sorted(result, key=lambda x: x["count"], reverse=True)
+        return [{"name": cat.name, "total_likes": total_likes} for cat in categories]
 
     def get_recent_users(self, limit: int = 5) -> list[User]:
         """Return the most recently registered users."""

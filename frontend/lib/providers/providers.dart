@@ -35,11 +35,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   void _setupTokenRefresh() {
-    _api.onTokenRefreshNeeded = (refreshToken) async {
+    _api.onTokenRefreshNeeded = (accessToken, refreshToken) async {
       final currentUser = state.valueOrNull;
       if (currentUser != null) {
         final updatedUser = currentUser.copyWithTokens(
-          token: _api.toString(), // Will be set by interceptor
+          token: accessToken,
           refreshToken: refreshToken,
         );
         await _auth.storeUser(updatedUser);
@@ -290,10 +290,17 @@ final discoverBooksProvider =
 /// Notifier that manages book discovery state including pagination and error recovery.
 class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
   int _page = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+
+  /// Number of remaining cards that triggers a prefetch of the next page.
+  static const int _prefetchThreshold = 5;
 
   @override
   Future<List<Book>> build() async {
     _page = 1;
+    _isLoadingMore = false;
+    _hasMore = true;
     final category = ref.watch(selectedCategoryProvider);
     return _fetchBooks(category);
   }
@@ -304,11 +311,17 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
   }
 
   /// Load the next page of books and append to the current list.
+  /// Guarded against concurrent calls — safe to call repeatedly.
   Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
     final category = ref.read(selectedCategoryProvider);
     _page++;
     try {
       final moreBooks = await _fetchBooks(category);
+      if (moreBooks.isEmpty) {
+        _hasMore = false;
+      }
       final current = state.valueOrNull ?? [];
       state = AsyncValue.data([...current, ...moreBooks]);
     } on DioException catch (e) {
@@ -323,12 +336,23 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     } catch (e, st) {
       _page--;
       state = AsyncValue.error('Failed to load more books', st);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+
+  /// Call from the swiper's onSwipe to prefetch when running low on cards.
+  void maybeLoadMore(int remainingCards) {
+    if (remainingCards <= _prefetchThreshold) {
+      loadMore();
     }
   }
 
   /// Reset pagination and reload books from scratch.
   Future<void> refresh() async {
     _page = 1;
+    _isLoadingMore = false;
+    _hasMore = true;
     state = const AsyncValue.loading();
     final category = ref.read(selectedCategoryProvider);
     try {

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 
@@ -28,14 +27,10 @@ class BookListTile extends StatelessWidget {
             width: 50,
             height: 70,
             child: book.thumbnailUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: book.thumbnailUrl!,
+                ? Image.network(
+                    book.highResThumbnail,
                     fit: BoxFit.cover,
-                    placeholder: (_, _) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.book, size: 24),
-                    ),
-                    errorWidget: (_, _, _) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       color: theme.colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.broken_image, size: 24),
                     ),
