@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -12,6 +12,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default="1")
+    deleted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
@@ -20,13 +22,26 @@ class User(Base):
     skipped_books: Mapped[list["SkippedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
+class BlacklistedToken(Base):
+    __tablename__ = "blacklisted_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    jti: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    blacklisted_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 class LikedBook(Base):
     __tablename__ = "liked_books"
-    __table_args__ = (UniqueConstraint("user_id", "google_book_id", name="uq_user_liked_book"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "google_book_id", name="uq_user_liked_book"),
+        Index("ix_liked_books_liked_at", "liked_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     authors: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     thumbnail: Mapped[str] = mapped_column(String(500), nullable=False, default="")
@@ -39,11 +54,14 @@ class LikedBook(Base):
 
 class SkippedBook(Base):
     __tablename__ = "skipped_books"
-    __table_args__ = (UniqueConstraint("user_id", "google_book_id", name="uq_user_skipped_book"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "google_book_id", name="uq_user_skipped_book"),
+        Index("ix_skipped_books_skipped_at", "skipped_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     skipped_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
+import '../utils/validators.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -73,15 +74,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
+                    validator: validateEmail,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -103,15 +96,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         },
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
+                    validator: validatePassword,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -121,12 +106,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       labelText: 'Confirm Password',
                       prefixIcon: Icon(Icons.lock_outlined),
                     ),
-                    validator: (value) {
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
+                    validator: (value) =>
+                        validatePasswordMatch(value, _passwordController.text),
                   ),
                   const SizedBox(height: 24),
                   if (authState.hasError)

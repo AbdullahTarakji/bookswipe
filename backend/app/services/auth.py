@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import User
+from app.models import BlacklistedToken, User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -27,7 +28,14 @@ def create_access_token(user_id: int) -> str:
         minutes=settings.access_token_expire_minutes
     )
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire, "type": "access"},
+        {
+            "sub": str(user_id),
+            "exp": expire,
+            "type": "access",
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
+            "jti": str(uuid.uuid4()),
+        },
         settings.secret_key,
         algorithm=settings.algorithm,
     )
@@ -38,15 +46,28 @@ def create_refresh_token(user_id: int) -> str:
         days=settings.refresh_token_expire_days
     )
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire, "type": "refresh"},
+        {
+            "sub": str(user_id),
+            "exp": expire,
+            "type": "refresh",
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
+            "jti": str(uuid.uuid4()),
+        },
         settings.secret_key,
         algorithm=settings.algorithm,
     )
 
 
-def decode_token(token: str, expected_type: str = "access") -> int:
+def decode_token(token: str, expected_type: str = "access", db: Session | None = None) -> int:
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
+        )
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,7 +87,39 @@ def decode_token(token: str, expected_type: str = "access") -> int:
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Check token blacklist
+    jti = payload.get("jti")
+    if jti and db:
+        blacklisted = db.query(BlacklistedToken).filter(BlacklistedToken.jti == jti).first()
+        if blacklisted:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     return int(user_id)
+
+
+def blacklist_token(token: str, db: Session) -> None:
+    """Add a token's JTI to the blacklist."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
+        )
+        jti = payload.get("jti")
+        if jti:
+            existing = db.query(BlacklistedToken).filter(BlacklistedToken.jti == jti).first()
+            if not existing:
+                db.add(BlacklistedToken(jti=jti))
+                db.commit()
+    except JWTError:
+        pass  # Token is already invalid, no need to blacklist
 
 
 def get_current_user(
@@ -79,8 +132,8 @@ def get_current_user(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user_id = decode_token(token, expected_type="access")
-    user = db.query(User).filter(User.id == user_id).first()
+    user_id = decode_token(token, expected_type="access", db=db)
+    user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -97,7 +150,7 @@ def get_optional_user(
     if token is None:
         return None
     try:
-        user_id = decode_token(token, expected_type="access")
+        user_id = decode_token(token, expected_type="access", db=db)
     except HTTPException:
         return None
-    return db.query(User).filter(User.id == user_id).first()
+    return db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
