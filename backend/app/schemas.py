@@ -119,6 +119,9 @@ class UserResponse(BaseModel):
     id: int
     email: str
     created_at: datetime.datetime
+    subscription_status: str = "free"
+    subscription_plan: str = "free"
+    subscription_end_date: datetime.datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -212,3 +215,28 @@ class AppleAuthRequest(BaseModel):
 class MessageResponse(BaseModel):
     """Generic response schema containing a status message."""
     message: str
+
+
+# --- Payments / Subscriptions ---
+
+class SubscriptionResponse(BaseModel):
+    """Response schema for subscription status."""
+    subscription_status: str
+    subscription_plan: str
+    subscription_end_date: datetime.datetime | None = None
+    is_premium: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class CheckoutSessionResponse(BaseModel):
+    """Response schema for a Stripe checkout session."""
+    checkout_url: str
+
+
+class SwipeLimitResponse(BaseModel):
+    """Response schema for swipe limit status."""
+    swipes_today: int
+    daily_limit: int
+    is_premium: bool
+    swipes_remaining: int

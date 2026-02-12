@@ -8,6 +8,7 @@ import 'screens/liked_books_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/subscription_screen.dart';
 import 'theme/app_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -64,6 +65,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/subscription',
+        builder: (context, state) => const SubscriptionScreen(),
       ),
     ],
   );

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final booksAsync = ref.watch(discoverBooksProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final user = ref.watch(authStateProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,6 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           _buildCategoryChips(selectedCategory),
+          if (user != null && !user.isPremium) _buildSwipeIndicator(),
           Expanded(
             child: booksAsync.when(
               loading: () => const LoadingIndicator(message: 'Finding books...'),
@@ -59,6 +62,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSwipeIndicator() {
+    final swipeStatus = ref.watch(swipeStatusProvider);
+    return swipeStatus.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (status) {
+        final swipesRemaining = status['swipes_remaining'] as int? ?? 10;
+        final dailyLimit = status['daily_limit'] as int? ?? 10;
+        final swipesToday = status['swipes_today'] as int? ?? 0;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: swipesToday / dailyLimit,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    minHeight: 6,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$swipesRemaining/$dailyLimit',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -134,13 +175,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _onSwipe(Book book, CardSwiperDirection direction) {
     if (direction == CardSwiperDirection.right) {
-      ref.read(likedBooksProvider.notifier).likeBook(book);
-      _showSwipeFeedback(true);
+      _handleLikeSwipe(book);
     } else if (direction == CardSwiperDirection.left) {
+      _handleSkipSwipe(book);
+    }
+  }
+
+  Future<void> _handleLikeSwipe(Book book) async {
+    try {
+      await ref.read(likedBooksProvider.notifier).likeBook(book);
+      _showSwipeFeedback(true);
+      ref.invalidate(swipeStatusProvider);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        _showUpgradePrompt();
+        return;
+      }
+      _showSwipeFeedback(true);
+    }
+  }
+
+  Future<void> _handleSkipSwipe(Book book) async {
+    try {
       final api = ref.read(apiServiceProvider);
-      api.skipBook(book.id);
+      await api.skipBook(book.id);
+      _showSwipeFeedback(false);
+      ref.invalidate(swipeStatusProvider);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        _showUpgradePrompt();
+        return;
+      }
       _showSwipeFeedback(false);
     }
+  }
+
+  void _showUpgradePrompt() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Daily swipe limit reached!'),
+        action: SnackBarAction(
+          label: 'Upgrade',
+          onPressed: () => context.push('/subscription'),
+        ),
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _showSwipeFeedback(bool isLike) {

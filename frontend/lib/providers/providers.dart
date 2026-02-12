@@ -64,6 +64,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             email: profile['email'] as String? ?? user.email,
             token: user.token,
             refreshToken: user.refreshToken,
+            subscriptionStatus: profile['subscription_status'] as String? ?? user.subscriptionStatus,
+            subscriptionPlan: profile['subscription_plan'] as String? ?? user.subscriptionPlan,
+            subscriptionEndDate: profile['subscription_end_date'] as String?,
           );
           await _auth.storeUser(updatedUser);
           state = AsyncValue.data(updatedUser);
@@ -101,6 +104,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: profile?['email'] as String? ?? email,
         token: accessToken,
         refreshToken: refreshToken,
+        subscriptionStatus: profile?['subscription_status'] as String? ?? 'free',
+        subscriptionPlan: profile?['subscription_plan'] as String? ?? 'free',
+        subscriptionEndDate: profile?['subscription_end_date'] as String?,
       );
 
       await _auth.storeUser(user);
@@ -134,6 +140,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: profile?['email'] as String? ?? email,
         token: accessToken,
         refreshToken: refreshToken,
+        subscriptionStatus: profile?['subscription_status'] as String? ?? 'free',
+        subscriptionPlan: profile?['subscription_plan'] as String? ?? 'free',
+        subscriptionEndDate: profile?['subscription_end_date'] as String?,
       );
 
       await _auth.storeUser(user);
@@ -194,10 +203,29 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       email: profile?['email'] as String? ?? '',
       token: accessToken,
       refreshToken: refreshToken,
+      subscriptionStatus: profile?['subscription_status'] as String? ?? 'free',
+      subscriptionPlan: profile?['subscription_plan'] as String? ?? 'free',
+      subscriptionEndDate: profile?['subscription_end_date'] as String?,
     );
 
     await _auth.storeUser(user);
     state = AsyncValue.data(user);
+  }
+
+  /// Refresh subscription status from the server.
+  Future<void> refreshSubscription() async {
+    final currentUser = state.valueOrNull;
+    if (currentUser == null) return;
+    try {
+      final profile = await _api.getProfile();
+      final updatedUser = currentUser.copyWithSubscription(
+        subscriptionStatus: profile['subscription_status'] as String? ?? 'free',
+        subscriptionPlan: profile['subscription_plan'] as String? ?? 'free',
+        subscriptionEndDate: profile['subscription_end_date'] as String?,
+      );
+      await _auth.storeUser(updatedUser);
+      state = AsyncValue.data(updatedUser);
+    } catch (_) {}
   }
 
   /// Clear all authentication state and stored tokens.
@@ -384,5 +412,21 @@ final bookDetailProvider =
     return await api.getBookDetails(bookId);
   } on DioException catch (e) {
     throw ApiService.formatError(e);
+  }
+});
+
+// --- Swipe Status ---
+
+/// Fetches the current user's swipe status (count, limit, premium).
+final swipeStatusProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final auth = ref.watch(authStateProvider);
+  if (auth.valueOrNull == null) {
+    return {'swipes_today': 0, 'daily_limit': 10, 'is_premium': false, 'swipes_remaining': 10};
+  }
+  final api = ref.read(apiServiceProvider);
+  try {
+    return await api.getSwipeStatus();
+  } catch (_) {
+    return {'swipes_today': 0, 'daily_limit': 10, 'is_premium': false, 'swipes_remaining': 10};
   }
 });

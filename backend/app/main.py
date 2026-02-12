@@ -25,7 +25,7 @@ from app.exceptions import BookSwipeException
 from app.logging_config import setup_logging
 from app.metrics import create_instrumentator
 from app.models import Category, SEED_CATEGORIES
-from app.routers import auth, books, categories
+from app.routers import auth, books, categories, payments
 from app.services.cache import close_redis, redis_ping
 from app.sentry_setup import init_sentry
 
@@ -182,6 +182,7 @@ async def request_id_middleware(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(books.router)
 app.include_router(categories.router)
+app.include_router(payments.router)
 
 
 @app.get("/health")

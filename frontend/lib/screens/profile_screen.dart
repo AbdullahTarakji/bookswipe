@@ -51,14 +51,46 @@ class ProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         children: [
           const SizedBox(height: 20),
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(
-              Icons.person,
-              size: 50,
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.person,
+                  size: 50,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              if (user.isPremium)
+                Positioned(
+                  bottom: 0,
+                  right: MediaQuery.of(context).size.width / 2 - 70,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.workspace_premium, size: 14, color: Colors.black87),
+                        SizedBox(width: 2),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -66,6 +98,17 @@ class ProfileScreen extends ConsumerWidget {
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
+          if (user.isPremium) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Premium Member',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.amber.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: 32),
           Card(
             child: Column(
@@ -82,6 +125,17 @@ class ProfileScreen extends ConsumerWidget {
                   title: const Text('Categories'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.go('/categories'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(
+                    Icons.workspace_premium,
+                    color: user.isPremium ? Colors.amber : null,
+                  ),
+                  title: const Text('Subscription'),
+                  subtitle: Text(user.isPremium ? 'Premium' : 'Free Plan'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/subscription'),
                 ),
               ],
             ),
