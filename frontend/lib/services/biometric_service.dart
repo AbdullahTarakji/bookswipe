@@ -46,7 +46,7 @@ class BiometricService {
     try {
       final isAvailable = await isBiometricAvailable();
       if (!isAvailable) {
-        return BiometricResult(
+        return const BiometricResult(
           success: false,
           errorMessage: 'Biometric authentication is not available on this device',
         );
@@ -61,9 +61,9 @@ class BiometricService {
       );
 
       if (didAuthenticate) {
-        return BiometricResult(success: true);
+        return const BiometricResult(success: true);
       } else {
-        return BiometricResult(
+        return const BiometricResult(
           success: false,
           errorMessage: 'Authentication failed or was cancelled',
         );
