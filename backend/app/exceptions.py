@@ -66,3 +66,19 @@ class RateLimitError(BookSwipeException):
     status_code = 429
     code = "RATE_LIMIT_EXCEEDED"
     message = "Rate limit exceeded. Try again later."
+
+
+class SwipeLimitError(BookSwipeException):
+    """Raised when a free-tier user exceeds their daily swipe limit."""
+
+    status_code = 429
+    code = "SWIPE_LIMIT_EXCEEDED"
+    message = "Daily swipe limit reached. Upgrade to Premium for unlimited swipes."
+
+
+class PaymentError(BookSwipeException):
+    """Raised when a payment operation fails."""
+
+    status_code = 400
+    code = "PAYMENT_ERROR"
+    message = "Payment operation failed"

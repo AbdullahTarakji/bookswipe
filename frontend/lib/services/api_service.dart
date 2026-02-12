@@ -228,6 +228,47 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  // --- Payments / Subscriptions ---
+
+  /// Get the current user's subscription status.
+  Future<Map<String, dynamic>> getSubscription() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/payments/subscription'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Create a Stripe checkout session and return the checkout URL.
+  Future<String> createCheckoutSession() async {
+    final response = await _requestWithRetry(
+      () => _dio.post('/api/payments/create-checkout'),
+    );
+    return (response.data as Map<String, dynamic>)['checkout_url'] as String;
+  }
+
+  /// Cancel the current subscription.
+  Future<void> cancelSubscription() async {
+    await _requestWithRetry(
+      () => _dio.post('/api/payments/cancel'),
+    );
+  }
+
+  /// Create a billing portal session and return the URL.
+  Future<String> createBillingPortalSession() async {
+    final response = await _requestWithRetry(
+      () => _dio.post('/api/payments/portal'),
+    );
+    return (response.data as Map<String, dynamic>)['checkout_url'] as String;
+  }
+
+  /// Get the current user's swipe limit status.
+  Future<Map<String, dynamic>> getSwipeStatus() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/payments/swipe-status'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   // --- Admin endpoints ---
 
   /// Fetch paginated list of users for admin panel.

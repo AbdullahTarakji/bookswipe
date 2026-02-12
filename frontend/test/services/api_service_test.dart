@@ -274,6 +274,66 @@ void main() {
     });
   });
 
+  group('payments', () {
+    test('getSubscription returns subscription data', () async {
+      mockAdapter.setResponse(200, {
+        'subscription_status': 'active',
+        'subscription_plan': 'premium',
+        'is_premium': true,
+        'subscription_end_date': '2025-12-31T00:00:00',
+      });
+
+      final result = await apiService.getSubscription();
+
+      expect(result['subscription_status'], 'active');
+      expect(result['subscription_plan'], 'premium');
+      expect(result['is_premium'], isTrue);
+    });
+
+    test('createCheckoutSession returns checkout URL', () async {
+      mockAdapter.setResponse(200, {
+        'checkout_url': 'https://checkout.stripe.com/session123',
+      });
+
+      final url = await apiService.createCheckoutSession();
+
+      expect(url, 'https://checkout.stripe.com/session123');
+    });
+
+    test('cancelSubscription completes without error', () async {
+      mockAdapter.setResponse(200, {'message': 'Subscription cancelled'});
+
+      await apiService.cancelSubscription();
+      // No exception = success
+    });
+
+    test('createBillingPortalSession returns portal URL', () async {
+      mockAdapter.setResponse(200, {
+        'checkout_url': 'https://billing.stripe.com/portal123',
+      });
+
+      final url = await apiService.createBillingPortalSession();
+
+      expect(url, 'https://billing.stripe.com/portal123');
+    });
+
+    test('getSwipeStatus returns swipe data', () async {
+      mockAdapter.setResponse(200, {
+        'swipes_today': 5,
+        'daily_limit': 10,
+        'is_premium': false,
+        'swipes_remaining': 5,
+      });
+
+      final result = await apiService.getSwipeStatus();
+
+      expect(result['swipes_today'], 5);
+      expect(result['daily_limit'], 10);
+      expect(result['is_premium'], isFalse);
+      expect(result['swipes_remaining'], 5);
+    });
+  });
+
   group('token management', () {
     test('setAuthToken adds bearer header', () {
       apiService.setAuthToken('my-token');

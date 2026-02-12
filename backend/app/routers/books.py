@@ -1,12 +1,15 @@
 """Book router: discovery, likes, skips, and book detail endpoints."""
 
+import datetime
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
-from app.exceptions import NotFoundError, ValidationError
+from app.exceptions import NotFoundError, SwipeLimitError, ValidationError
 from app.metrics import books_liked_total, books_skipped_total
-from app.models import User
+from app.models import DailySwipeCount, User
 from app.repositories.book_repository import BookRepository
 from app.schemas import (
     BookAction,
@@ -20,6 +23,32 @@ from app.services.auth import get_current_user, get_optional_user
 from app.services.google_books import get_book_by_id, search_books
 
 router = APIRouter(prefix="/api/books", tags=["books"])
+
+
+def _check_and_increment_swipe(user: User, db: Session) -> None:
+    """Check if user has swipes remaining, increment count. Premium users bypass."""
+    if user.is_premium:
+        return
+
+    today = datetime.date.today()
+    record = (
+        db.query(DailySwipeCount)
+        .filter(DailySwipeCount.user_id == user.id, DailySwipeCount.swipe_date == today)
+        .first()
+    )
+
+    if record:
+        if record.count >= settings.free_tier_daily_swipe_limit:
+            raise SwipeLimitError(
+                details={
+                    "swipes_today": record.count,
+                    "daily_limit": settings.free_tier_daily_swipe_limit,
+                },
+            )
+        record.count += 1
+    else:
+        db.add(DailySwipeCount(user_id=user.id, swipe_date=today, count=1))
+    db.flush()
 
 
 @router.get("/discover", response_model=PaginatedBooks)
@@ -78,6 +107,7 @@ def like_book(
     db: Session = Depends(get_db),
 ):
     """Add a book to the authenticated user's liked list."""
+    _check_and_increment_swipe(current_user, db)
     repo = BookRepository(db)
     existing = repo.get_liked_book(current_user.id, body.google_book_id)
     if existing:
@@ -100,6 +130,7 @@ def skip_book(
     db: Session = Depends(get_db),
 ):
     """Mark a book as skipped for the authenticated user."""
+    _check_and_increment_swipe(current_user, db)
     repo = BookRepository(db)
     existing = repo.get_skipped_book(current_user.id, body.google_book_id)
     if existing:

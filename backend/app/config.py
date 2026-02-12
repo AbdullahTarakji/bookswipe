@@ -55,6 +55,14 @@ class Settings(BaseSettings):
     book_detail_cache_ttl: int = 86400  # 24 hours
     category_cache_ttl: int = 0  # 0 = permanent (no expiry)
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+    stripe_success_url: str = "http://localhost:8000/payment/success"
+    stripe_cancel_url: str = "http://localhost:8000/payment/cancel"
+    free_tier_daily_swipe_limit: int = 10
+
     # Password policy
     password_min_length: int = 8
 

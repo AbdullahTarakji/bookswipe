@@ -2,7 +2,7 @@
 
 import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -27,8 +27,18 @@ class User(Base):
         DateTime, server_default=func.now(), nullable=False
     )
 
+    # Stripe subscription fields
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None, index=True)
+    subscription_status: Mapped[str] = mapped_column(String(20), nullable=False, default="free", server_default="free")
+    subscription_plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free", server_default="free")
+    subscription_end_date: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+
     liked_books: Mapped[list["LikedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     skipped_books: Mapped[list["SkippedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def is_premium(self) -> bool:
+        return self.subscription_status == "active" and self.subscription_plan == "premium"
 
 
 class BlacklistedToken(Base):
@@ -88,6 +98,19 @@ class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     google_category_key: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class DailySwipeCount(Base):
+    """Tracks the number of swipes a user has made per day for free tier limits."""
+    __tablename__ = "daily_swipe_counts"
+    __table_args__ = (
+        UniqueConstraint("user_id", "swipe_date", name="uq_user_swipe_date"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    swipe_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 SEED_CATEGORIES = [
