@@ -4,11 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/book.dart';
 import '../providers/providers.dart';
 import '../widgets/error_view.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/shimmer_loading.dart';
+import '../widgets/swipe_snackbar.dart';
 
+/// Full-page book detail screen with Hero cover animation and shimmer loading.
+///
+/// Navigated to from the liked books list or any book link via `/book/:id`.
+/// Uses a [SliverAppBar] with an expanding cover image and displays
+/// metadata, categories, description, and a like/unlike button.
 class BookDetailScreen extends ConsumerWidget {
+  /// The unique identifier of the book to display.
   final String bookId;
 
+  /// Creates a book detail screen for the given [bookId].
   const BookDetailScreen({super.key, required this.bookId});
 
   @override
@@ -19,7 +27,7 @@ class BookDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       body: bookAsync.when(
-        loading: () => const LoadingIndicator(message: 'Loading book details...'),
+        loading: () => const BookDetailShimmer(),
         error: (error, _) => ErrorView(
           message: error.toString(),
           onRetry: () => ref.invalidate(bookDetailProvider(bookId)),
@@ -51,12 +59,14 @@ class BookDetailScreen extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(child: Icon(Icons.broken_image, size: 80)),
+                        child: const Center(
+                            child: Icon(Icons.broken_image, size: 80)),
                       ),
                     )
                   : Container(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Center(child: Icon(Icons.book, size: 80)),
+                      child:
+                          const Center(child: Icon(Icons.book, size: 80)),
                     ),
             ),
           ),
@@ -110,7 +120,8 @@ class BookDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                if (book.publisher != null || book.publishedDate != null) ...[
+                if (book.publisher != null ||
+                    book.publishedDate != null) ...[
                   const SizedBox(height: 20),
                   Text(
                     'Publication Info',
@@ -120,10 +131,11 @@ class BookDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   if (book.publisher != null)
-                    _buildInfoRow(Icons.business, 'Publisher', book.publisher!),
-                  if (book.publishedDate != null)
                     _buildInfoRow(
-                        Icons.calendar_today, 'Published', book.publishedDate!),
+                        Icons.business, 'Publisher', book.publisher!),
+                  if (book.publishedDate != null)
+                    _buildInfoRow(Icons.calendar_today, 'Published',
+                        book.publishedDate!),
                 ],
                 const SizedBox(height: 40),
               ],
@@ -179,8 +191,10 @@ class BookDetailScreen extends ConsumerWidget {
         onPressed: () {
           if (isLiked) {
             ref.read(likedBooksProvider.notifier).unlikeBook(book.id);
+            showRemovedFromFavoritesSnackBar(context, book.title);
           } else {
             ref.read(likedBooksProvider.notifier).likeBook(book);
+            showAddedToFavoritesSnackBar(context, book.title);
           }
         },
         icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border),

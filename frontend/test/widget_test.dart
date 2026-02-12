@@ -35,7 +35,7 @@ void main() {
       );
 
       expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
     });
 
     testWidgets('shows retry button when callback provided', (tester) async {
@@ -51,8 +51,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Retry'), findsOneWidget);
-      await tester.tap(find.text('Retry'));
+      expect(find.text('Try Again'), findsOneWidget);
+      await tester.tap(find.text('Try Again'));
       expect(retried, true);
     });
 
@@ -63,7 +63,34 @@ void main() {
         ),
       );
 
-      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Try Again'), findsNothing);
+    });
+
+    testWidgets('shows default title', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ErrorView(message: 'Error')),
+        ),
+      );
+
+      expect(find.text('Oops!'), findsOneWidget);
+    });
+
+    testWidgets('shows custom title and icon', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorView(
+              message: 'Not found',
+              title: 'Missing',
+              icon: Icons.search_off,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Missing'), findsOneWidget);
+      expect(find.byIcon(Icons.search_off), findsOneWidget);
     });
   });
 }
