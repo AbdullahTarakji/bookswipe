@@ -118,6 +118,7 @@ class UserResponse(BaseModel):
     """Response schema for user profile information."""
     id: int
     email: str
+    role: str
     created_at: datetime.datetime
     subscription_status: str = "free"
     subscription_plan: str = "free"
@@ -240,3 +241,65 @@ class SwipeLimitResponse(BaseModel):
     daily_limit: int
     is_premium: bool
     swipes_remaining: int
+
+
+# --- Admin ---
+
+class AdminUserResponse(BaseModel):
+    """Response schema for admin user listing."""
+    id: int
+    email: str
+    role: str
+    is_active: bool
+    is_banned: bool
+    banned_at: datetime.datetime | None = None
+    ban_reason: str | None = None
+    auth_provider: str
+    created_at: datetime.datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedAdminUsers(BaseModel):
+    """Paginated response for admin user listing."""
+    users: list[AdminUserResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class UpdateRoleRequest(BaseModel):
+    """Request schema for updating a user's role."""
+    role: str = Field(..., pattern=r"^(admin|user)$")
+
+
+class BanUserRequest(BaseModel):
+    """Request schema for banning a user."""
+    reason: str | None = Field(None, max_length=500)
+
+
+class AnalyticsResponse(BaseModel):
+    """Response schema for admin analytics dashboard."""
+    total_users: int
+    active_users_7d: int
+    banned_users: int
+    admin_users: int
+    total_likes: int
+    total_skips: int
+    user_growth: list[dict]
+    popular_categories: list[dict]
+    recent_users: list[dict]
+
+
+class SystemInfoResponse(BaseModel):
+    """Response schema for system information."""
+    app_version: str
+    environment: str
+    python_version: str
+    platform: str
+    uptime_seconds: float
+    uptime_human: str
+    database: dict
+    redis: dict
+    memory_usage_mb: float
+    pid: int

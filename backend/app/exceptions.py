@@ -28,6 +28,14 @@ class AuthError(BookSwipeException):
     message = "Authentication failed"
 
 
+class ForbiddenError(BookSwipeException):
+    """Raised when the user lacks permission for the requested action."""
+
+    status_code = 403
+    code = "FORBIDDEN"
+    message = "Insufficient permissions"
+
+
 class NotFoundError(BookSwipeException):
     """Raised when a requested resource does not exist."""
 

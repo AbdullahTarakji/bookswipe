@@ -24,8 +24,9 @@ from app.database import Base, engine, SessionLocal, check_db_health
 from app.exceptions import BookSwipeException
 from app.logging_config import setup_logging
 from app.metrics import create_instrumentator
-from app.models import Category, SEED_CATEGORIES
-from app.routers import auth, books, categories, payments
+from app.models import Category, User, SEED_CATEGORIES
+from app.routers import admin, auth, books, categories, payments
+from app.services.auth import hash_password
 from app.services.cache import close_redis, redis_ping
 from app.sentry_setup import init_sentry
 
@@ -47,6 +48,22 @@ def seed_categories(db: Session) -> None:
     db.commit()
 
 
+def seed_admin(db: Session) -> None:
+    """Create a default admin user if no admin exists."""
+    admin_exists = db.query(User).filter(User.role == "admin").first()
+    if admin_exists:
+        return
+    admin_user = User(
+        email="admin@bookswipe.app",
+        hashed_password=hash_password("AdminPass123"),
+        role="admin",
+        auth_provider="email",
+    )
+    db.add(admin_user)
+    db.commit()
+    logger.info("Default admin user seeded: admin@bookswipe.app")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown tasks."""
@@ -57,6 +74,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_categories(db)
+        seed_admin(db)
     finally:
         db.close()
     logger.info("BookSwipe API started (env=%s)", settings.environment)
@@ -183,6 +201,7 @@ app.include_router(auth.router)
 app.include_router(books.router)
 app.include_router(categories.router)
 app.include_router(payments.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")

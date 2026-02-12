@@ -4,6 +4,7 @@ class User {
   final String email;
   final String token;
   final String refreshToken;
+  final String role;
   final String subscriptionStatus;
   final String subscriptionPlan;
   final String? subscriptionEndDate;
@@ -13,10 +14,13 @@ class User {
     required this.email,
     required this.token,
     this.refreshToken = '',
+    this.role = 'user',
     this.subscriptionStatus = 'free',
     this.subscriptionPlan = 'free',
     this.subscriptionEndDate,
   });
+
+  bool get isAdmin => role == 'admin';
 
   bool get isPremium =>
       subscriptionStatus == 'active' && subscriptionPlan == 'premium';
@@ -27,6 +31,7 @@ class User {
       email: json['email'] as String? ?? '',
       token: json['token'] as String? ?? json['access_token'] as String? ?? '',
       refreshToken: json['refresh_token'] as String? ?? '',
+      role: json['role'] as String? ?? 'user',
       subscriptionStatus:
           json['subscription_status'] as String? ?? 'free',
       subscriptionPlan: json['subscription_plan'] as String? ?? 'free',
@@ -40,6 +45,7 @@ class User {
       email: email,
       token: token,
       refreshToken: refreshToken,
+      role: role,
       subscriptionStatus: subscriptionStatus,
       subscriptionPlan: subscriptionPlan,
       subscriptionEndDate: subscriptionEndDate,
@@ -56,9 +62,32 @@ class User {
       email: email,
       token: token,
       refreshToken: refreshToken,
+      role: role,
       subscriptionStatus: subscriptionStatus,
       subscriptionPlan: subscriptionPlan,
       subscriptionEndDate: subscriptionEndDate,
+    );
+  }
+
+  User copyWith({
+    String? id,
+    String? email,
+    String? token,
+    String? refreshToken,
+    String? role,
+    String? subscriptionStatus,
+    String? subscriptionPlan,
+    String? subscriptionEndDate,
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      token: token ?? this.token,
+      refreshToken: refreshToken ?? this.refreshToken,
+      role: role ?? this.role,
+      subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
+      subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
+      subscriptionEndDate: subscriptionEndDate ?? this.subscriptionEndDate,
     );
   }
 
@@ -67,6 +96,7 @@ class User {
         'email': email,
         'token': token,
         'refresh_token': refreshToken,
+        'role': role,
         'subscription_status': subscriptionStatus,
         'subscription_plan': subscriptionPlan,
         'subscription_end_date': subscriptionEndDate,

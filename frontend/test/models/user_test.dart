@@ -171,5 +171,70 @@ void main() {
       expect(user.subscriptionEndDate, isNull);
       expect(user.isPremium, isFalse);
     });
+
+    test('fromJson parses role field', () {
+      final json = {
+        'id': 1,
+        'email': 'admin@test.com',
+        'access_token': 'token',
+        'role': 'admin',
+      };
+
+      final user = User.fromJson(json);
+
+      expect(user.role, 'admin');
+      expect(user.isAdmin, true);
+    });
+
+    test('role defaults to user', () {
+      final json = {
+        'access_token': 'token',
+      };
+
+      final user = User.fromJson(json);
+
+      expect(user.role, 'user');
+      expect(user.isAdmin, false);
+    });
+
+    test('toJson includes role', () {
+      const user = User(
+        id: '1',
+        email: 'admin@test.com',
+        token: 'token',
+        role: 'admin',
+      );
+
+      final json = user.toJson();
+
+      expect(json['role'], 'admin');
+    });
+
+    test('copyWith preserves role', () {
+      const user = User(
+        id: '1',
+        email: 'admin@test.com',
+        token: 'token',
+        role: 'admin',
+      );
+
+      final updated = user.copyWith(email: 'new@test.com');
+
+      expect(updated.role, 'admin');
+      expect(updated.email, 'new@test.com');
+    });
+
+    test('copyWithTokens preserves role', () {
+      const user = User(
+        id: '1',
+        email: 'admin@test.com',
+        token: 'old',
+        role: 'admin',
+      );
+
+      final updated = user.copyWithTokens(token: 'new', refreshToken: 'new-r');
+
+      expect(updated.role, 'admin');
+    });
   });
 }
