@@ -1,7 +1,6 @@
 """Tests for payment endpoints and swipe limits."""
 
 import datetime
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
