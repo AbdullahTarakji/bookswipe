@@ -9,20 +9,26 @@ import '../services/auth_service.dart';
 
 // --- Core Services ---
 
+/// Provides the singleton [ApiService] instance for HTTP communication.
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+/// Provides the singleton [AuthService] instance for secure token storage.
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 // --- Auth State ---
 
+/// Manages the current authentication state (loading, authenticated, or unauthenticated).
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
   return AuthNotifier(ref.read(apiServiceProvider), ref.read(authServiceProvider));
 });
 
+/// Notifier that handles login, registration, OAuth, and session restoration.
 class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   final ApiService _api;
   final AuthService _auth;
 
+  /// Creates an [AuthNotifier] and immediately begins restoring any saved session.
   AuthNotifier(this._api, this._auth) : super(const AsyncValue.loading()) {
     _setupTokenRefresh();
     _init();
@@ -73,6 +79,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Authenticate with email and password. Sets error state on failure.
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     try {
@@ -105,6 +112,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Register a new account. Sets error state on failure.
   Future<void> register(String email, String password) async {
     state = const AsyncValue.loading();
     try {
@@ -137,6 +145,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Sign in with a Google OAuth ID token. Sets error state on failure.
   Future<void> signInWithGoogle(String idToken) async {
     state = const AsyncValue.loading();
     try {
@@ -149,6 +158,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Sign in with Apple OAuth credentials. Sets error state on failure.
   Future<void> signInWithApple({
     required String authorizationCode,
     required String identityToken,
@@ -190,6 +200,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     state = AsyncValue.data(user);
   }
 
+  /// Clear all authentication state and stored tokens.
   Future<void> logout() async {
     _api.clearAuthToken();
     await _auth.clearUser();
@@ -199,10 +210,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
 // --- Selected Category ---
 
+/// Tracks the currently selected category for book discovery filtering.
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
 // --- Categories from API ---
 
+/// Fetches book categories from the API, falling back to local defaults on failure.
 final categoriesProvider = FutureProvider<List<BookCategory>>((ref) async {
   final api = ref.read(apiServiceProvider);
   try {
@@ -237,10 +250,12 @@ final categoriesProvider = FutureProvider<List<BookCategory>>((ref) async {
 
 // --- Books Discovery ---
 
+/// Provides the list of books available for discovery (swipe).
 final discoverBooksProvider =
     AsyncNotifierProvider<DiscoverBooksNotifier, List<Book>>(
         DiscoverBooksNotifier.new);
 
+/// Notifier that manages book discovery state including pagination and error recovery.
 class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
   int _page = 1;
 
@@ -256,6 +271,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     return api.discoverBooks(category: category, page: _page);
   }
 
+  /// Load the next page of books and append to the current list.
   Future<void> loadMore() async {
     final category = ref.read(selectedCategoryProvider);
     _page++;
@@ -278,6 +294,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Reset pagination and reload books from scratch.
   Future<void> refresh() async {
     _page = 1;
     state = const AsyncValue.loading();
@@ -292,6 +309,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Remove a book from the discovery list (e.g. after swiping).
   void removeBook(String bookId) {
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data(current.where((b) => b.id != bookId).toList());
@@ -300,10 +318,12 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
 
 // --- Liked Books ---
 
+/// Provides the list of books the current user has liked.
 final likedBooksProvider =
     AsyncNotifierProvider<LikedBooksNotifier, List<Book>>(
         LikedBooksNotifier.new);
 
+/// Notifier that manages the liked books list with optimistic updates.
 class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
   @override
   Future<List<Book>> build() async {
@@ -317,6 +337,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Add a book to the liked list with optimistic UI update.
   Future<void> likeBook(Book book) async {
     final api = ref.read(apiServiceProvider);
     try {
@@ -332,6 +353,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Remove a book from the liked list.
   Future<void> unlikeBook(String bookId) async {
     final api = ref.read(apiServiceProvider);
     try {
@@ -345,6 +367,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Reload the liked books list from the server.
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     ref.invalidateSelf();
@@ -353,6 +376,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
 
 // --- Book Detail ---
 
+/// Fetches detailed information for a single book by its ID.
 final bookDetailProvider =
     FutureProvider.family<Book, String>((ref, bookId) async {
   final api = ref.read(apiServiceProvider);

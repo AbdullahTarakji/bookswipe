@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// A centered loading spinner with an optional status message.
 class LoadingIndicator extends StatelessWidget {
   final String? message;
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 
+/// Manages secure storage of user credentials using platform-specific encryption.
 class AuthService {
   static const _userKey = 'bookswipe_user';
 

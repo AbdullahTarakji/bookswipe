@@ -1,10 +1,16 @@
+"""BookSwipe API application entry point.
+
+Configures the FastAPI app with middleware, exception handlers, and route registration.
+"""
+
 import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -14,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import Base, engine, SessionLocal
+from app.exceptions import BookSwipeException
 from app.models import Category, SEED_CATEGORIES
 from app.routers import auth, books, categories
 
@@ -24,11 +31,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bookswipe")
 
-# Sensitive fields to redact in logs
-_SENSITIVE_FIELDS = {"password", "secret_key", "access_token", "refresh_token", "authorization"}
-
 
 def seed_categories(db: Session) -> None:
+    """Populate the database with default book categories if empty."""
     existing = db.query(Category).count()
     if existing > 0:
         return
@@ -39,6 +44,7 @@ def seed_categories(db: Session) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup and shutdown tasks."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -74,9 +80,33 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(BookSwipeException)
+async def bookswipe_exception_handler(request: Request, exc: BookSwipeException) -> JSONResponse:
+    """Global handler that converts BookSwipeException subclasses to structured JSON."""
+    request_id = getattr(request.state, "request_id", None)
+    logger.warning(
+        "code=%s message=%s request_id=%s",
+        exc.code,
+        exc.message,
+        request_id,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.message,
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details,
+            },
+        },
+    )
+
+
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
-    response: Response = await call_next(request)
+    """Add security headers to every response."""
+    response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -89,6 +119,7 @@ async def security_headers_middleware(request: Request, call_next):
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
+    """Assign a unique request ID to each request and log request metrics."""
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     request.state.request_id = request_id
     start_time = time.time()
@@ -113,6 +144,7 @@ app.include_router(categories.router)
 
 @app.get("/health")
 def health_check():
+    """Return application health status."""
     return {
         "status": "ok",
         "version": settings.app_version,
