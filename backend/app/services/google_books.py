@@ -50,7 +50,7 @@ def _parse_book_summary(item: dict[str, Any]) -> BookSummary:
     # Use cover-proxy with book ID for high-res image lookup
     book_id = item.get("id", "")
     if book_id:
-        thumbnail = f"/api/books/cover-proxy/{book_id}"
+        thumbnail = f"/api/books/cover-proxy/{book_id}?v=2"
     return BookSummary(
         google_book_id=item["id"],
         title=info.get("title", "Unknown"),
@@ -71,7 +71,7 @@ def _parse_book_detail(item: dict[str, Any]) -> BookDetail:
         thumbnail = "https://" + thumbnail[7:]
     book_id = item.get("id", "")
     if book_id:
-        thumbnail = f"/api/books/cover-proxy/{book_id}"
+        thumbnail = f"/api/books/cover-proxy/{book_id}?v=2"
     return BookDetail(
         google_book_id=item["id"],
         title=info.get("title", "Unknown"),
