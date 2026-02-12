@@ -16,7 +16,7 @@ from app.database import check_db_health
 from app.exceptions import AuthError, NotFoundError, ValidationError
 from app.models import User
 from app.repositories.admin_repository import AdminRepository
-from app.services.auth import get_current_user, hash_password
+
 
 
 # Track process start time
