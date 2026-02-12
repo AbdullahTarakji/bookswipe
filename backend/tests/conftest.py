@@ -2,12 +2,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app
 from app.models import SEED_CATEGORIES, Category
+
+# Valid test password meeting all requirements
+VALID_TEST_PASSWORD = "TestPass123"
 
 TEST_DB_URL = "sqlite:///./test_bookswipe.db"
 engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
@@ -47,6 +52,19 @@ def setup_database():
     Base.metadata.drop_all(bind=engine)
 
 
+@pytest.fixture(autouse=True)
+def disable_rate_limiter():
+    """Disable rate limiter during tests to avoid 429 errors."""
+    from app.routers.auth import limiter as auth_limiter
+
+    app_limiter = app.state.limiter
+    app_limiter.enabled = False
+    auth_limiter.enabled = False
+    yield
+    app_limiter.enabled = True
+    auth_limiter.enabled = True
+
+
 @pytest.fixture()
 def client():
     return TestClient(app)
@@ -65,7 +83,7 @@ def db_session():
 def registered_user(client):
     resp = client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": VALID_TEST_PASSWORD,
     })
     return resp.json()
 
