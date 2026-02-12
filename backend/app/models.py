@@ -19,6 +19,9 @@ class User(Base):
     provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None, index=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user", server_default="user")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default="1")
+    is_banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
+    banned_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
     deleted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
