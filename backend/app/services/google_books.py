@@ -59,6 +59,10 @@ def _parse_book_summary(item: dict[str, Any]) -> BookSummary:
         categories=info.get("categories", []),
         average_rating=info.get("averageRating"),
         ratings_count=info.get("ratingsCount"),
+        description=info.get("description", ""),
+        page_count=info.get("pageCount"),
+        published_date=info.get("publishedDate"),
+        publisher=info.get("publisher"),
     )
 
 
@@ -99,6 +103,10 @@ def _book_summary_to_dict(book: BookSummary) -> dict[str, Any]:
         "categories": book.categories,
         "average_rating": book.average_rating,
         "ratings_count": book.ratings_count,
+        "description": book.description,
+        "page_count": book.page_count,
+        "published_date": book.published_date,
+        "publisher": book.publisher,
     }
 
 
