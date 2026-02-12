@@ -168,6 +168,8 @@ class _CoverImage extends StatelessWidget {
       child: CachedNetworkImage(
         imageUrl: url,
         fit: BoxFit.cover,
+        memCacheWidth: 800,
+        maxWidthDiskCache: 800,
         placeholder: (_, __) => Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -486,10 +487,12 @@ class _BookDetailSheet extends StatelessWidget {
                       aspectRatio: 2 / 3,
                       child: Hero(
                         tag: 'book-cover-${book.id}',
-                        child: Image.network(
-                          book.highResThumbnail,
+                        child: CachedNetworkImage(
+                          imageUrl: book.highResThumbnail,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          memCacheWidth: 800,
+                          maxWidthDiskCache: 800,
+                          errorWidget: (_, __, ___) => Container(
                             color: theme.colorScheme.surfaceContainerHighest,
                             child: const Center(child: Icon(Icons.book, size: 80)),
                           ),
