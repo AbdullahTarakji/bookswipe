@@ -27,7 +27,7 @@ class SocialLoginButtons extends ConsumerWidget {
               'assets/google_logo.png',
               height: 20,
               width: 20,
-              errorBuilder: (_, __, _) => const Icon(Icons.g_mobiledata, size: 24),
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24),
             ),
             label: const Text('Sign in with Google'),
             style: OutlinedButton.styleFrom(
