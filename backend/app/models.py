@@ -16,7 +16,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     auth_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="email", server_default="email")
-    provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None, index=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user", server_default="user")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default="1")
     deleted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)

@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./bookswipe.db"
 
+    # Connection pool (PostgreSQL only, ignored for SQLite)
+    db_pool_size: int = 20
+    db_max_overflow: int = 10
+    db_pool_timeout: int = 30
+    db_pool_recycle: int = 1800
+
     # JWT
     secret_key: str = "change-me-in-production-use-a-real-secret-key"
     algorithm: str = "HS256"

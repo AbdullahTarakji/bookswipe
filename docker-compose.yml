@@ -1,6 +1,23 @@
 version: "3.8"
 
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bookswipe
+      POSTGRES_PASSWORD: bookswipe_dev
+      POSTGRES_DB: bookswipe
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookswipe"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -8,15 +25,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./bookswipe.db
+      - DATABASE_URL=postgresql://bookswipe:bookswipe_dev@db:5432/bookswipe
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - REFRESH_TOKEN_EXPIRE_DAYS=7
       - CORS_ORIGINS=["*"]
       - DEBUG=true
+      - DB_POOL_SIZE=20
+      - DB_MAX_OVERFLOW=10
+      - DB_POOL_TIMEOUT=30
+      - DB_POOL_RECYCLE=1800
     volumes:
       - backend-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -29,3 +53,4 @@ services:
 
 volumes:
   backend-data:
+  postgres-data:

@@ -19,7 +19,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import Base, engine, SessionLocal
+from app.database import Base, engine, SessionLocal, check_db_health
 from app.exceptions import BookSwipeException
 from app.models import Category, SEED_CATEGORIES
 from app.routers import auth, books, categories
@@ -144,9 +144,12 @@ app.include_router(categories.router)
 
 @app.get("/health")
 def health_check():
-    """Return application health status."""
+    """Return application health status including database connectivity."""
+    db_health = check_db_health()
+    overall_status = "ok" if db_health["status"] == "ok" else "degraded"
     return {
-        "status": "ok",
+        "status": overall_status,
         "version": settings.app_version,
         "environment": settings.environment,
+        "database": db_health,
     }
