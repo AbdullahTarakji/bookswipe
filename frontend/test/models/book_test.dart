@@ -163,7 +163,7 @@ void main() {
       expect(json['is_liked'], true);
     });
 
-    test('highResThumbnail returns url as-is', () {
+    test('highResThumbnail returns url as-is for external URLs', () {
       const book = Book(
         id: '1',
         title: 'Test',
@@ -172,6 +172,27 @@ void main() {
       );
 
       expect(book.highResThumbnail, 'https://books.google.com/thumb?zoom=1');
+    });
+
+    test('highResThumbnail returns proxy URLs as-is', () {
+      const book = Book(
+        id: '1',
+        title: 'Test',
+        authors: [],
+        thumbnailUrl: '/api/books/cover-proxy/abc',
+      );
+
+      expect(book.highResThumbnail, '/api/books/cover-proxy/abc');
+    });
+
+    test('highResThumbnail returns empty string for null url', () {
+      const book = Book(
+        id: '1',
+        title: 'Test',
+        authors: [],
+      );
+
+      expect(book.highResThumbnail, '');
     });
   });
 }
