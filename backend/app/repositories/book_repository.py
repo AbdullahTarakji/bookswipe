@@ -43,7 +43,10 @@ class BookRepository:
             .first()
         )
 
-    def create_liked_book(self, user_id: int, google_book_id: str, title: str, authors: str, thumbnail: str) -> LikedBook:
+    def create_liked_book(
+        self, user_id: int, google_book_id: str,
+        title: str, authors: str, thumbnail: str,
+    ) -> LikedBook:
         """Create and persist a new liked book record."""
         liked = LikedBook(
             user_id=user_id,

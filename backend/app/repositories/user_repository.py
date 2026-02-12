@@ -27,7 +27,10 @@ class UserRepository:
             query = query.filter(User.is_active.is_(True))
         return query.first()
 
-    def create(self, email: str, hashed_password: str, auth_provider: str = "email", provider_id: str | None = None) -> User:
+    def create(
+        self, email: str, hashed_password: str,
+        auth_provider: str = "email", provider_id: str | None = None,
+    ) -> User:
         """Create and persist a new user."""
         user = User(
             email=email,
