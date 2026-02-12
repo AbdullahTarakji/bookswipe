@@ -111,6 +111,9 @@ def mock_redis():
          patch("app.services.google_books.cache_set", side_effect=_mock_cache_set), \
          patch("app.services.auth.blacklist_add", side_effect=_mock_blacklist_add), \
          patch("app.services.auth.blacklist_check", side_effect=_mock_blacklist_check), \
+         patch("app.services.recommendation.cache_get", side_effect=_mock_cache_get), \
+         patch("app.services.recommendation.cache_set", side_effect=_mock_cache_set), \
+         patch("app.services.recommendation.cache_delete", side_effect=_mock_cache_delete), \
          patch("app.main.redis_ping", side_effect=_mock_redis_ping), \
          patch("app.main.close_redis", side_effect=_mock_close_redis):
         yield
