@@ -1,16 +1,15 @@
-"""Google Books API integration with caching and per-user rate limiting."""
+"""Google Books API integration with Redis caching and per-user rate limiting."""
 
 import time
 from typing import Any
 
 import httpx
-from cachetools import TTLCache
 
 from app.config import settings
 from app.exceptions import ExternalAPIError, NotFoundError, RateLimitError
 from app.schemas import BookDetail, BookSummary
+from app.services.cache import cache_get, cache_set
 
-_cache: TTLCache = TTLCache(maxsize=1024, ttl=settings.google_books_cache_ttl)
 _rate_limits: dict[int, list[float]] = {}
 
 
@@ -72,6 +71,48 @@ def _parse_book_detail(item: dict[str, Any]) -> BookDetail:
     )
 
 
+def _book_summary_to_dict(book: BookSummary) -> dict[str, Any]:
+    """Serialize a BookSummary to a JSON-safe dict for caching."""
+    return {
+        "google_book_id": book.google_book_id,
+        "title": book.title,
+        "authors": book.authors,
+        "thumbnail": book.thumbnail,
+        "categories": book.categories,
+        "average_rating": book.average_rating,
+        "ratings_count": book.ratings_count,
+    }
+
+
+def _dict_to_book_summary(d: dict[str, Any]) -> BookSummary:
+    """Deserialize a dict back into a BookSummary."""
+    return BookSummary(**d)
+
+
+def _book_detail_to_dict(book: BookDetail) -> dict[str, Any]:
+    """Serialize a BookDetail to a JSON-safe dict for caching."""
+    return {
+        "google_book_id": book.google_book_id,
+        "title": book.title,
+        "authors": book.authors,
+        "thumbnail": book.thumbnail,
+        "categories": book.categories,
+        "average_rating": book.average_rating,
+        "ratings_count": book.ratings_count,
+        "description": book.description,
+        "page_count": book.page_count,
+        "published_date": book.published_date,
+        "publisher": book.publisher,
+        "preview_link": book.preview_link,
+        "info_link": book.info_link,
+    }
+
+
+def _dict_to_book_detail(d: dict[str, Any]) -> BookDetail:
+    """Deserialize a dict back into a BookDetail."""
+    return BookDetail(**d)
+
+
 async def search_books(
     category: str,
     page: int = 1,
@@ -89,9 +130,10 @@ async def search_books(
     start_index = (page - 1) * page_size
     cache_key = f"search:{category}:{start_index}:{page_size}"
 
-    cached = _cache.get(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
-        items, total = cached
+        items = [_dict_to_book_summary(b) for b in cached["items"]]
+        total = cached["total"]
     else:
         params: dict[str, Any] = {
             "q": f"subject:{category}",
@@ -120,7 +162,11 @@ async def search_books(
         total = data.get("totalItems", 0)
         raw_items = data.get("items", [])
         items = [_parse_book_summary(item) for item in raw_items]
-        _cache[cache_key] = (items, total)
+        await cache_set(
+            cache_key,
+            {"items": [_book_summary_to_dict(b) for b in items], "total": total},
+            ttl=settings.google_books_cache_ttl,
+        )
 
     if exclude_ids:
         items = [b for b in items if b.google_book_id not in exclude_ids]
@@ -137,9 +183,9 @@ async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail
     _check_rate_limit(user_id)
 
     cache_key = f"book:{book_id}"
-    cached = _cache.get(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
-        return cached
+        return _dict_to_book_detail(cached)
 
     url = f"{settings.google_books_api_url}/{book_id}"
     params: dict[str, Any] = {}
@@ -161,11 +207,10 @@ async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail
         raise ExternalAPIError("Google Books API error")
 
     detail = _parse_book_detail(resp.json())
-    _cache[cache_key] = detail
+    await cache_set(cache_key, _book_detail_to_dict(detail), ttl=settings.book_detail_cache_ttl)
     return detail
 
 
 def clear_cache() -> None:
-    """Clear the in-memory book cache and rate limit counters (for testing)."""
-    _cache.clear()
+    """Clear rate limit counters (for testing). Redis cache is mocked in tests."""
     _rate_limits.clear()

@@ -1,6 +1,7 @@
 """Authentication service: password hashing, JWT token management, and user resolution."""
 
 import datetime
+import logging
 import uuid
 
 from fastapi import Depends
@@ -14,6 +15,9 @@ from app.database import get_db
 from app.exceptions import AuthError
 from app.models import User
 from app.repositories.user_repository import UserRepository
+from app.services.cache import blacklist_add, blacklist_check
+
+logger = logging.getLogger("bookswipe")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -67,8 +71,54 @@ def create_refresh_token(user_id: int) -> str:
     )
 
 
+def _token_ttl_seconds(payload: dict) -> int:
+    """Calculate remaining TTL in seconds from token expiry claim."""
+    exp = payload.get("exp")
+    if exp is None:
+        return 3600  # default 1 hour
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    remaining = int(exp - now)
+    return max(remaining, 1)
+
+
+async def decode_token_async(token: str, expected_type: str = "access", db: Session | None = None) -> int:
+    """Async version: decode and validate a JWT token, checking Redis blacklist first.
+
+    Falls back to DB blacklist check if Redis is unavailable.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
+        )
+    except JWTError:
+        raise AuthError("Invalid or expired token")
+    if payload.get("type") != expected_type:
+        raise AuthError("Invalid token type")
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise AuthError("Invalid token")
+
+    # Check token blacklist - Redis first, DB fallback
+    jti = payload.get("jti")
+    if jti:
+        redis_result = await blacklist_check(jti)
+        if redis_result is True:
+            raise AuthError("Token has been revoked")
+        if redis_result is None and db:
+            # Redis unavailable, fall back to DB
+            repo = UserRepository(db)
+            if repo.is_token_blacklisted(jti):
+                raise AuthError("Token has been revoked")
+
+    return int(user_id)
+
+
 def decode_token(token: str, expected_type: str = "access", db: Session | None = None) -> int:
-    """Decode and validate a JWT token, returning the user ID.
+    """Decode and validate a JWT token, returning the user ID (sync, DB-only blacklist check).
 
     Raises AuthError if the token is invalid, expired, wrong type, or blacklisted.
     """
@@ -98,8 +148,29 @@ def decode_token(token: str, expected_type: str = "access", db: Session | None =
     return int(user_id)
 
 
+async def blacklist_token_async(token: str, db: Session) -> None:
+    """Add a token's JTI to both Redis and DB blacklists."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
+        )
+        jti = payload.get("jti")
+        if jti:
+            ttl = _token_ttl_seconds(payload)
+            await blacklist_add(jti, ttl)
+            # Also persist in DB as fallback
+            repo = UserRepository(db)
+            repo.blacklist_token(jti)
+    except JWTError:
+        pass  # Token is already invalid, no need to blacklist
+
+
 def blacklist_token(token: str, db: Session) -> None:
-    """Add a token's JTI to the blacklist so it can no longer be used."""
+    """Add a token's JTI to the DB blacklist (sync)."""
     try:
         payload = jwt.decode(
             token,

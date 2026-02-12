@@ -63,6 +63,59 @@ def disable_rate_limiter():
     auth_limiter.enabled = True
 
 
+# In-memory store that simulates Redis during tests
+_test_cache_store: dict[str, str] = {}
+_test_blacklist_store: set[str] = set()
+
+
+@pytest.fixture(autouse=True)
+def mock_redis():
+    """Mock all Redis cache operations with an in-memory store for tests."""
+    import json
+
+    _test_cache_store.clear()
+    _test_blacklist_store.clear()
+
+    async def _mock_cache_get(key):
+        raw = _test_cache_store.get(key)
+        if raw is None:
+            return None
+        return json.loads(raw)
+
+    async def _mock_cache_set(key, value, ttl=None):
+        _test_cache_store[key] = json.dumps(value)
+
+    async def _mock_cache_delete(key):
+        _test_cache_store.pop(key, None)
+
+    async def _mock_blacklist_add(jti, ttl):
+        _test_blacklist_store.add(jti)
+
+    async def _mock_blacklist_check(jti):
+        return jti in _test_blacklist_store
+
+    async def _mock_redis_ping():
+        return True
+
+    async def _mock_close_redis():
+        pass
+
+    with patch("app.services.cache.cache_get", side_effect=_mock_cache_get), \
+         patch("app.services.cache.cache_set", side_effect=_mock_cache_set), \
+         patch("app.services.cache.cache_delete", side_effect=_mock_cache_delete), \
+         patch("app.services.cache.blacklist_add", side_effect=_mock_blacklist_add), \
+         patch("app.services.cache.blacklist_check", side_effect=_mock_blacklist_check), \
+         patch("app.services.cache.redis_ping", side_effect=_mock_redis_ping), \
+         patch("app.services.cache.close_redis", side_effect=_mock_close_redis), \
+         patch("app.services.google_books.cache_get", side_effect=_mock_cache_get), \
+         patch("app.services.google_books.cache_set", side_effect=_mock_cache_set), \
+         patch("app.services.auth.blacklist_add", side_effect=_mock_blacklist_add), \
+         patch("app.services.auth.blacklist_check", side_effect=_mock_blacklist_check), \
+         patch("app.main.redis_ping", side_effect=_mock_redis_ping), \
+         patch("app.main.close_redis", side_effect=_mock_close_redis):
+        yield
+
+
 @pytest.fixture()
 def client():
     return TestClient(app)
