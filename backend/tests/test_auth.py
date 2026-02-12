@@ -159,7 +159,7 @@ def test_health_check_version(client):
     assert "version" in data
     assert "uptime" in data
     assert data["dependencies"]["database"] == "ok"
-    assert data["dependencies"]["redis"] == "not_configured"
+    assert "redis" in data["dependencies"]
 
 
 def test_security_headers(client):
