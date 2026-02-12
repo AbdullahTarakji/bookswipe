@@ -293,6 +293,10 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
 
+  /// Last swiped book for undo/rewind.
+  Book? _lastSwiped;
+  bool _lastSwipedWasLike = false;
+
   /// Number of remaining cards that triggers a prefetch of the next page.
   static const int _prefetchThreshold = 5;
 
@@ -301,6 +305,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     _page = 1;
     _isLoadingMore = false;
     _hasMore = true;
+    _lastSwiped = null;
     final category = ref.watch(selectedCategoryProvider);
     return _fetchBooks(category);
   }
@@ -362,6 +367,29 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
       state = AsyncValue.error(ApiService.formatError(e), StackTrace.current);
     } catch (e, st) {
       state = AsyncValue.error('Failed to load books', st);
+    }
+  }
+
+  /// Track the last swiped book so it can be undone.
+  void setLastSwiped(Book book, {required bool wasLiked}) {
+    _lastSwiped = book;
+    _lastSwipedWasLike = wasLiked;
+  }
+
+  /// Undo the last swipe — re-inserts the book at the front of the stack.
+  /// If it was a like, also unlikes it via the API.
+  void undoLastSwipe() {
+    final book = _lastSwiped;
+    if (book == null) return;
+    _lastSwiped = null;
+
+    // Re-insert at front
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data([book, ...current]);
+
+    // If it was a like, undo the like
+    if (_lastSwipedWasLike) {
+      ref.read(likedBooksProvider.notifier).unlikeBook(book.id);
     }
   }
 

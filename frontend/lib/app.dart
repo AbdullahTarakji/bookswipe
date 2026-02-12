@@ -152,32 +152,32 @@ class AppShell extends ConsumerWidget {
   static List<NavigationDestination> _buildDestinations(bool isAdmin) {
     final destinations = <NavigationDestination>[
       const NavigationDestination(
-        icon: Icon(Icons.explore_outlined),
-        selectedIcon: Icon(Icons.explore),
-        label: 'Discover',
+        icon: Icon(Icons.local_fire_department_outlined),
+        selectedIcon: Icon(Icons.local_fire_department),
+        label: '',
       ),
       const NavigationDestination(
-        icon: Icon(Icons.category_outlined),
-        selectedIcon: Icon(Icons.category),
-        label: 'Categories',
+        icon: Icon(Icons.grid_view_outlined),
+        selectedIcon: Icon(Icons.grid_view),
+        label: '',
       ),
       const NavigationDestination(
         icon: Icon(Icons.favorite_outline),
         selectedIcon: Icon(Icons.favorite),
-        label: 'Liked',
+        label: '',
       ),
       const NavigationDestination(
         icon: Icon(Icons.person_outline),
         selectedIcon: Icon(Icons.person),
-        label: 'Profile',
+        label: '',
       ),
     ];
 
     if (isAdmin) {
       destinations.add(const NavigationDestination(
-        icon: Icon(Icons.admin_panel_settings_outlined),
-        selectedIcon: Icon(Icons.admin_panel_settings),
-        label: 'Admin',
+        icon: Icon(Icons.shield_outlined),
+        selectedIcon: Icon(Icons.shield),
+        label: '',
       ));
     }
 
