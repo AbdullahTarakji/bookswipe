@@ -1,7 +1,6 @@
 """arq worker settings — run with: arq app.workers.settings.WorkerSettings"""
 
 import logging
-from datetime import timedelta
 
 from app.config import settings
 from app.workers.tasks import cleanup_expired_tokens
