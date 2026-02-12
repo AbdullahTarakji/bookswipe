@@ -129,9 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // ── Tinder action buttons ──
         _ActionButtons(
           onRewind: () => _handleRewind(),
-          onNope: () => _swiperController.swipeLeft(),
+          onNope: () => _swiperController.swipe(CardSwiperDirection.left),
           onSuperLike: () => _swiperController.swipe(CardSwiperDirection.top),
-          onLike: () => _swiperController.swipeRight(),
+          onLike: () => _swiperController.swipe(CardSwiperDirection.right),
         ),
 
         const SizedBox(height: 8),
