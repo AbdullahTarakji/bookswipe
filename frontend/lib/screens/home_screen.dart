@@ -492,7 +492,7 @@ class _BookDetailSheet extends StatelessWidget {
                           fit: BoxFit.cover,
                           memCacheWidth: 800,
                           maxWidthDiskCache: 800,
-                          errorWidget: (_, __, ___) => Container(
+                          errorWidget: (ctx, url, err) => Container(
                             color: theme.colorScheme.surfaceContainerHighest,
                             child: const Center(child: Icon(Icons.book, size: 80)),
                           ),
@@ -533,7 +533,7 @@ class _BookDetailSheet extends StatelessWidget {
                           const Icon(Icons.star_rounded, size: 20, color: AppTheme.rewindYellow),
                           const SizedBox(width: 4),
                           Text(
-                            '${book.averageRating!.toStringAsFixed(1)}',
+                            book.averageRating!.toStringAsFixed(1),
                             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           if (book.ratingsCount != null)
@@ -544,7 +544,7 @@ class _BookDetailSheet extends StatelessWidget {
                           const SizedBox(width: 16),
                         ],
                         if (book.pageCount != null) ...[
-                          Icon(Icons.menu_book_rounded, size: 18, color: AppTheme.textSecondary),
+                          const Icon(Icons.menu_book_rounded, size: 18, color: AppTheme.textSecondary),
                           const SizedBox(width: 4),
                           Text(
                             '${book.pageCount} pages',
@@ -569,7 +569,7 @@ class _BookDetailSheet extends StatelessWidget {
                             ),
                             child: Text(
                               cat,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppTheme.tinderRed,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,

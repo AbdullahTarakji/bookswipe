@@ -106,7 +106,7 @@ class _ErrorFallback extends StatelessWidget {
                 color: AppTheme.nopeRed,
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Something went wrong',
                 style: TextStyle(
                   fontSize: 20,
@@ -115,7 +115,7 @@ class _ErrorFallback extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'An unexpected error occurred. Please try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(

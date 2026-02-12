@@ -240,9 +240,10 @@ async def health_check():
 # Serve Flutter web frontend with SPA fallback (must be after all API routes)
 import os as _os
 import pathlib as _pathlib
-_flutter_web = _pathlib.Path(
-    _os.environ.get("FLUTTER_WEB_DIR", str(_pathlib.Path(__file__).resolve().parent.parent.parent / "frontend" / "build" / "web"))
+_default_web = str(
+    _pathlib.Path(__file__).resolve().parent.parent.parent / "frontend" / "build" / "web"
 )
+_flutter_web = _pathlib.Path(_os.environ.get("FLUTTER_WEB_DIR", _default_web))
 if _flutter_web.exists():
     from starlette.staticfiles import StaticFiles
     from starlette.responses import FileResponse

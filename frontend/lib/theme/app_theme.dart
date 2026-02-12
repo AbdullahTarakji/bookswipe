@@ -69,7 +69,7 @@ class AppTheme {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: primary, size: 28);
+            return const IconThemeData(color: primary, size: 28);
           }
           return const IconThemeData(color: textSecondary, size: 28);
         }),
@@ -123,7 +123,7 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: scheme,
       scaffoldBackgroundColor: darkBg,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: darkBg,
@@ -149,7 +149,7 @@ class AppTheme {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: primary, size: 28);
+            return const IconThemeData(color: primary, size: 28);
           }
           return IconThemeData(color: Colors.white.withValues(alpha: 0.5), size: 28);
         }),

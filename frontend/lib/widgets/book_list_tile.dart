@@ -37,7 +37,7 @@ class BookListTile extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: book.highResThumbnail,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
+                          errorWidget: (ctx, url, err) => Container(
                             color: theme.colorScheme.surfaceContainerHighest,
                             child: const Icon(Icons.broken_image, size: 24),
                           ),
