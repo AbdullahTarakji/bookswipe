@@ -3,7 +3,7 @@
 import logging
 
 from app.config import settings
-from app.workers.tasks import cleanup_expired_tokens
+from app.workers.tasks import cleanup_expired_tokens, compute_all_preferences
 
 logger = logging.getLogger("bookswipe.worker")
 
@@ -19,7 +19,7 @@ async def shutdown(ctx: dict) -> None:
 class WorkerSettings:
     """Configuration for the arq worker process."""
 
-    functions = [cleanup_expired_tokens]
+    functions = [cleanup_expired_tokens, compute_all_preferences]
 
     cron_jobs = [
         # Run cleanup_expired_tokens every hour at minute 0
@@ -27,6 +27,13 @@ class WorkerSettings:
             "coroutine": cleanup_expired_tokens,
             "hour": None,  # every hour
             "minute": {0},
+            "unique": True,
+        })(),
+        # Run compute_all_preferences every hour at minute 30
+        type("CronJob", (), {
+            "coroutine": compute_all_preferences,
+            "hour": None,  # every hour
+            "minute": {30},
             "unique": True,
         })(),
     ]

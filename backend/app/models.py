@@ -2,7 +2,7 @@
 
 import datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -35,6 +35,10 @@ class User(Base):
 
     liked_books: Mapped[list["LikedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     skipped_books: Mapped[list["SkippedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    swipe_events: Mapped[list["SwipeEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    preferences: Mapped["UserPreference | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
 
     @property
     def is_premium(self) -> bool:
@@ -111,6 +115,46 @@ class DailySwipeCount(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     swipe_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class SwipeEvent(Base):
+    """Records each swipe action with book metadata for preference learning."""
+
+    __tablename__ = "swipe_events"
+    __table_args__ = (
+        Index("ix_swipe_events_user_action", "user_id", "action"),
+        Index("ix_swipe_events_created_at", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(20), nullable=False)  # like, skip, superlike
+    genre: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    author: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="swipe_events")
+
+
+class UserPreference(Base):
+    """Aggregated user taste profile computed from swipe history."""
+
+    __tablename__ = "user_preferences"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    genre_scores: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON
+    author_scores: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON
+    category_scores: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    user: Mapped["User"] = relationship(back_populates="preferences")
 
 
 SEED_CATEGORIES = [

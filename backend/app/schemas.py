@@ -303,3 +303,53 @@ class SystemInfoResponse(BaseModel):
     redis: dict
     memory_usage_mb: float
     pid: int
+
+
+# --- Recommendations ---
+
+class SwipeEventCreate(BaseModel):
+    """Request schema for recording a swipe event with metadata."""
+
+    google_book_id: str = Field(..., max_length=50)
+    action: str = Field(..., pattern=r"^(like|skip|superlike)$")
+    genre: str = Field(default="", max_length=200)
+    author: str = Field(default="", max_length=500)
+    category: str = Field(default="", max_length=200)
+
+    @field_validator("genre", "author", "category")
+    @classmethod
+    def sanitize_metadata(cls, v: str) -> str:
+        """Strip HTML tags from metadata fields."""
+        return _sanitize_string(v)
+
+
+class SwipeEventResponse(BaseModel):
+    """Response schema for a recorded swipe event."""
+
+    id: int
+    google_book_id: str
+    action: str
+    genre: str
+    author: str
+    category: str
+    created_at: datetime.datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserPreferenceResponse(BaseModel):
+    """Response schema for computed user preferences."""
+
+    genre_scores: dict[str, float]
+    author_scores: dict[str, float]
+    category_scores: dict[str, float]
+    updated_at: datetime.datetime | None = None
+
+
+class PaginatedRecommendations(BaseModel):
+    """Paginated response containing recommended book summaries."""
+
+    books: list[BookSummary]
+    total: int
+    page: int
+    page_size: int
