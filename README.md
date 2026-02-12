@@ -43,6 +43,12 @@ bookswipe/
 │       ├── schemas.py     # Pydantic request/response schemas
 │       ├── exceptions.py  # Custom exception hierarchy
 │       └── config.py      # Environment-based settings
+├── deploy/                # Environment templates
+│   ├── staging.env        # Staging configuration
+│   └── production.env     # Production configuration
+├── nginx/                 # Nginx reverse proxy config
+├── scripts/               # Operational scripts (backup, etc.)
+├── k8s/                   # Kubernetes manifests
 ├── docs/                  # Documentation
 │   ├── API.md             # API endpoint reference
 │   └── ARCHITECTURE.md    # Architecture overview
@@ -57,9 +63,23 @@ bookswipe/
 
 - Python 3.11+
 - Flutter 3.x (with Dart SDK)
+- Docker & Docker Compose
 - Git
 
-### Backend Setup
+### Local Development
+
+```bash
+# Start everything with Docker Compose
+make dev
+
+# Or manually
+docker compose up --build -d
+
+# Backend is at http://localhost:8000/docs
+# Frontend is at http://localhost:8080
+```
+
+### Backend Setup (without Docker)
 
 ```bash
 cd backend
@@ -75,21 +95,13 @@ pip install -r requirements-dev.txt
 pytest tests/
 ```
 
-The API will be available at `http://localhost:8000` with interactive docs at `/docs`.
-
 ### Frontend Setup
 
 ```bash
 cd frontend
 flutter pub get
-
-# Run the app (connects to localhost:8000 by default)
 flutter run
-
-# Run tests
 flutter test
-
-# Check for lint issues
 flutter analyze
 ```
 
@@ -105,6 +117,91 @@ flutter analyze
 | `ENVIRONMENT`           | `development`                  | `development`/`production` |
 
 Copy `.env.example` to `.env` and fill in your values, or set them as environment variables.
+
+## Deployment
+
+### Architecture
+
+```
+Internet → Cloudflare/ALB (TLS) → Nginx (gzip, rate limit) → Gunicorn + Uvicorn → FastAPI
+                                                            → PostgreSQL
+                                                            → Redis (cache, rate limits, token blacklist)
+```
+
+SSL termination is handled upstream by Cloudflare or AWS ALB. The compose stack runs on port 80.
+
+### Production Deploy
+
+1. **Configure environment:**
+   ```bash
+   cp deploy/production.env .env
+   # Edit .env — replace all CHANGEME values
+   # Generate a secret key: openssl rand -hex 64
+   ```
+
+2. **Start production stack:**
+   ```bash
+   make prod
+   ```
+
+   This starts: FastAPI (gunicorn), PostgreSQL, Redis, Nginx, and a daily pg_dump backup cron.
+
+3. **Run migrations:**
+   ```bash
+   make migrate
+   ```
+
+### Staging Deploy
+
+```bash
+cp deploy/staging.env .env
+# Edit .env
+make prod
+```
+
+Staging uses a separate PostgreSQL instance and relaxed rate limits for testing.
+
+### Container Registry
+
+Images are published to `ghcr.io/abdullahtarakji/bookswipe-api` automatically:
+- **On merge to main** — tagged with commit SHA and `latest`
+- **On `v*` tag push** — tagged with semver (e.g., `1.2.3`, `1.2`) and creates a GitHub Release with auto-generated changelog
+
+### Makefile Targets
+
+| Target          | Description                                 |
+|-----------------|---------------------------------------------|
+| `make dev`      | Start development environment               |
+| `make prod`     | Start production environment                |
+| `make test`     | Run backend tests with coverage             |
+| `make lint`     | Run linter                                  |
+| `make lint-fix` | Run linter with auto-fix                    |
+| `make migrate`  | Run database migrations                     |
+| `make seed`     | Seed database with default categories       |
+| `make backup`   | Run a manual database backup                |
+| `make clean`    | Remove containers, volumes, build artifacts |
+| `make help`     | Show all targets                            |
+
+### Database Backups
+
+Production runs a daily `pg_dump` at 02:00 UTC, keeping the last 7 days. Backups are stored in the `backup-data` Docker volume.
+
+```bash
+make backup          # Manual backup
+make backup-list     # List available backups
+```
+
+### Kubernetes
+
+K8s manifests are in `k8s/` for cluster deployments. Update the image in `k8s/deployment.yaml` to point to `ghcr.io/abdullahtarakji/bookswipe-api:<tag>`.
+
+### Domains
+
+| Environment | URL                          |
+|-------------|------------------------------|
+| Production  | https://bookswipe.app        |
+| API         | https://api.bookswipe.app    |
+| Staging     | https://staging.bookswipe.app|
 
 ## Documentation
 
