@@ -23,6 +23,7 @@ from app.database import Base, engine, SessionLocal, check_db_health
 from app.exceptions import BookSwipeException
 from app.models import Category, SEED_CATEGORIES
 from app.routers import auth, books, categories
+from app.services.cache import close_redis, redis_ping
 
 # Structured logging
 logging.basicConfig(
@@ -53,11 +54,17 @@ async def lifespan(app: FastAPI):
         db.close()
     logger.info("BookSwipe API started (env=%s)", settings.environment)
     yield
+    await close_redis()
     logger.info("BookSwipe API shutting down")
 
 
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address, default_limits=[settings.api_rate_limit])
+# Rate limiter with Redis storage for distributed rate limiting
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[settings.api_rate_limit],
+    storage_uri=settings.redis_url,
+    in_memory_fallback_enabled=True,
+)
 
 app = FastAPI(
     title=settings.app_name,
@@ -147,9 +154,13 @@ def health_check():
     """Return application health status including database connectivity."""
     db_health = check_db_health()
     overall_status = "ok" if db_health["status"] == "ok" else "degraded"
+async def health_check():
+    """Return application health status including Redis connectivity."""
+    redis_ok = await redis_ping()
     return {
         "status": overall_status,
         "version": settings.app_version,
         "environment": settings.environment,
         "database": db_health,
+        "redis": "connected" if redis_ok else "unavailable",
     }

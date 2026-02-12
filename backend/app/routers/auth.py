@@ -23,7 +23,7 @@ from app.schemas import (
     check_password_strength,
 )
 from app.services.auth import (
-    blacklist_token,
+    blacklist_token_async,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -134,20 +134,20 @@ def apple_auth(request: Request, body: AppleAuthRequest, db: Session = Depends(g
 
 
 @router.post("/logout", response_model=MessageResponse)
-def logout(
+async def logout(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
     """Invalidate the current access token."""
     if token:
-        blacklist_token(token, db)
+        await blacklist_token_async(token, db)
     return MessageResponse(message="Successfully logged out")
 
 
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("5/minute")
-def refresh_token(request: Request, body: TokenRefresh, db: Session = Depends(get_db)):
+async def refresh_token(request: Request, body: TokenRefresh, db: Session = Depends(get_db)):
     """Exchange a refresh token for a new access/refresh token pair."""
     user_id = decode_token(body.refresh_token, expected_type="refresh", db=db)
     repo = UserRepository(db)
@@ -155,7 +155,7 @@ def refresh_token(request: Request, body: TokenRefresh, db: Session = Depends(ge
     if not user:
         raise AuthError("User not found")
     # Rotate: blacklist old refresh token, issue new pair
-    blacklist_token(body.refresh_token, db)
+    await blacklist_token_async(body.refresh_token, db)
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),

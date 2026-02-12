@@ -15,6 +15,15 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bookswipe"]
       interval: 5s
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -40,6 +49,11 @@ services:
       - backend-data:/app/data
     depends_on:
       db:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - backend-data:/app/data
+    depends_on:
+      redis:
         condition: service_healthy
 
   frontend:
@@ -54,3 +68,4 @@ services:
 volumes:
   backend-data:
   postgres-data:
+  redis-data:

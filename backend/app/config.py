@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     apple_client_id: str = ""
 
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+    redis_max_connections: int = 20
+
+    # Cache TTLs (seconds)
+    book_detail_cache_ttl: int = 86400  # 24 hours
+    category_cache_ttl: int = 0  # 0 = permanent (no expiry)
+
     # Password policy
     password_min_length: int = 8
 
