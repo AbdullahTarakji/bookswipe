@@ -1,4 +1,4 @@
-.PHONY: dev prod test lint migrate seed clean help
+.PHONY: dev prod test lint migrate seed seed-demo clean help
 .DEFAULT_GOAL := help
 
 # ── Development ──────────────────────────────────────────────
@@ -47,8 +47,11 @@ migrate: ## Run database migrations
 migrate-new: ## Create a new migration (usage: make migrate-new MSG="add users table")
 	cd backend && alembic revision --autogenerate -m "$(MSG)"
 
-seed: ## Seed the database with default data
+seed: ## Seed the database with default categories
 	cd backend && python -c "from app.database import SessionLocal, engine, Base; from app.models import Category, SEED_CATEGORIES; Base.metadata.create_all(bind=engine); db = SessionLocal(); [db.merge(Category(**c)) for c in SEED_CATEGORIES]; db.commit(); db.close(); print('Seeded.')"
+
+seed-demo: ## Seed demo data (users, books, swipe history)
+	docker compose exec backend python -m scripts.seed_demo
 
 # ── Backups ──────────────────────────────────────────────────
 backup: ## Run a manual database backup (production)

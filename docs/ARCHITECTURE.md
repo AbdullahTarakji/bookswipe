@@ -2,32 +2,83 @@
 
 ## Overview
 
-BookSwipe is a full-stack application with a Flutter frontend and a Python FastAPI backend. The backend follows a clean layered architecture; the frontend uses Riverpod for state management with a service-based data layer.
+BookSwipe is a full-stack book discovery application with a Flutter frontend and Python FastAPI backend. Users swipe through books (like Tinder), building a personal reading list. The system learns from swipe history to generate personalized recommendations.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          Client Layer                               │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────────────────┐  │
+│  │  Android     │  │     iOS      │  │    Web (nginx + SPA)      │  │
+│  │  Flutter App │  │  Flutter App │  │    Flutter Web Build      │  │
+│  └──────┬──────┘  └──────┬───────┘  └─────────────┬─────────────┘  │
+│         │                │                         │                │
+│         └────────────────┼─────────────────────────┘                │
+│                          │ HTTP / REST                              │
+└──────────────────────────┼──────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                       API Gateway Layer                             │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  Nginx (production only)                                     │   │
+│  │  - TLS termination (upstream Cloudflare/ALB)                │   │
+│  │  - Gzip compression                                         │   │
+│  │  - Rate limiting (5/min auth, 30/min API)                   │   │
+│  │  - Security headers (CSP, HSTS, X-Frame-Options)            │   │
+│  └──────────────────────────┬───────────────────────────────────┘   │
+│                              │                                      │
+└──────────────────────────────┼──────────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                      Application Layer                              │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  FastAPI (gunicorn + uvicorn workers)                        │   │
+│  │                                                              │   │
+│  │  Middleware: Request ID → Security Headers → CORS → SlowAPI  │   │
+│  │                                                              │   │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────────────────┐ │   │
+│  │  │  Routers   │  │  Services  │  │    Repositories        │ │   │
+│  │  │  (7 files) │─▶│  (7 files) │─▶│    (6 files)           │ │   │
+│  │  │  HTTP I/O  │  │  Logic     │  │    SQL queries         │ │   │
+│  │  └────────────┘  └─────┬──────┘  └───────────┬────────────┘ │   │
+│  │                        │                      │              │   │
+│  │           ┌────────────┼──────────────────────┘              │   │
+│  │           ▼            ▼                                     │   │
+│  │  ┌──────────────┐  ┌──────────────┐                         │   │
+│  │  │  External    │  │  Database    │                         │   │
+│  │  │  APIs        │  │  (SQLAlchemy)│                         │   │
+│  │  │  - Google    │  └──────────────┘                         │   │
+│  │  │    Books     │                                           │   │
+│  │  │  - Stripe    │  ┌──────────────┐                         │   │
+│  │  │  - FCM       │  │  Background  │                         │   │
+│  │  └──────────────┘  │  Workers     │                         │   │
+│  │                     │  (arq)       │                         │   │
+│  │                     └──────────────┘                         │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────┬───────────────────────┬───────────────────────────┘
+                  │                       │
+┌─────────────────▼─────────┐  ┌─────────▼───────────────────────────┐
+│     Data Layer            │  │     Cache Layer                     │
+│  ┌─────────────────────┐  │  │  ┌─────────────────────────────┐   │
+│  │  PostgreSQL 16      │  │  │  │  Redis 7                    │   │
+│  │  11 tables          │  │  │  │  - API response cache       │   │
+│  │  - users            │  │  │  │  - Rate limit counters      │   │
+│  │  - liked_books      │  │  │  │  - Token blacklist          │   │
+│  │  - skipped_books    │  │  │  │  - Session data             │   │
+│  │  - categories       │  │  │  └─────────────────────────────┘   │
+│  │  - swipe_events     │  │  │                                     │
+│  │  - user_preferences │  │  └─────────────────────────────────────┘
+│  │  - notifications    │  │
+│  │  - device_tokens    │  │
+│  │  - ...              │  │
+│  └─────────────────────┘  │
+│                            │
+└────────────────────────────┘
+```
 
 ## Backend Architecture
-
-```
-HTTP Request
-    │
-    ▼
-┌──────────┐     ┌──────────┐     ┌──────────────┐     ┌──────────┐
-│  Router   │────▶│ Service  │────▶│  Repository  │────▶│ Database │
-│ (HTTP)    │     │ (Logic)  │     │  (Queries)   │     │ (SQLite/ │
-│           │     │          │     │              │     │  Postgres)│
-└──────────┘     └──────────┘     └──────────────┘     └──────────┘
-    │                 │
-    │                 ▼
-    │           ┌──────────┐
-    │           │ External │
-    │           │  APIs    │
-    │           │ (Google  │
-    │           │  Books)  │
-    │           └──────────┘
-    ▼
-┌──────────┐
-│ Schemas  │  (Pydantic validation at API boundary)
-└──────────┘
-```
 
 ### Layer Responsibilities
 
@@ -37,33 +88,39 @@ HTTP Request
 - Delegate to services and repositories
 - No direct database queries
 
+| Router | Endpoints | Purpose |
+|--------|-----------|---------|
+| `auth.py` | `/api/auth/*` | Register, login, OAuth, token refresh, logout |
+| `books.py` | `/api/books/*` | Discover, like, skip, liked list |
+| `categories.py` | `/api/categories/*` | List and get categories |
+| `recommendations.py` | `/api/recommendations/*` | Personalized book suggestions |
+| `payments.py` | `/api/payments/*` | Stripe subscription management |
+| `admin.py` | `/api/admin/*` | User management (ban, list, stats) |
+| `notifications.py` | `/api/notifications/*` | FCM tokens, preferences, history |
+
 **Services** (`app/services/`)
-- Implement business logic (authentication, token management, external API calls)
+- Implement business logic (auth, recommendations, payments)
+- Call external APIs (Google Books, Stripe, FCM)
 - Raise custom exceptions from `app/exceptions.py`
 - Stateless functions (no request/response awareness)
 
 **Repositories** (`app/repositories/`)
 - Encapsulate all SQLAlchemy database queries
-- One repository per aggregate root (User, Book, Category)
+- One repository per aggregate root (User, Book, Category, etc.)
 - Accept a `Session` and return model instances
 - No business logic or HTTP concerns
 
 **Models** (`app/models.py`)
 - SQLAlchemy ORM model definitions
 - Table relationships, constraints, and indexes
-- Seed data for categories
+- Seed data for categories (14 genres)
 
 **Schemas** (`app/schemas.py`)
 - Pydantic models for request validation and response serialization
 - Input sanitization (HTML/script tag stripping)
 - Password strength validation
 
-**Exceptions** (`app/exceptions.py`)
-- Custom exception hierarchy rooted at `BookSwipeException`
-- Each exception carries a status code, error code, and message
-- Global exception handler in `main.py` converts these to structured JSON
-
-### Exception Handling Flow
+### Exception Handling
 
 ```
 Code raises AuthError("Invalid email or password")
@@ -83,19 +140,53 @@ JSON Response:
 }
 ```
 
-### Middleware Stack
+Custom exceptions: `AuthError`, `NotFoundError`, `ValidationError`, `ExternalAPIError`.
 
-1. **Request ID** -- Assigns UUID to each request, adds `X-Request-ID` header, logs timing
-2. **Security Headers** -- Sets CSP, HSTS, X-Frame-Options, etc.
-3. **CORS** -- Configurable cross-origin access
-4. **Rate Limiting** -- SlowAPI-based per-IP rate limits on auth endpoints
+### Middleware Stack (order matters)
+
+1. **Request ID** -- UUID per request, timing, structured logging
+2. **Security Headers** -- CSP, HSTS, X-Frame-Options, X-Content-Type-Options
+3. **CORS** -- Configurable origins (`["*"]` in dev, restricted in prod)
+4. **Rate Limiting** -- SlowAPI with Redis storage, in-memory fallback
 
 ### Authentication
 
 - JWT-based with access tokens (15 min) and refresh tokens (7 days)
 - Token rotation on refresh (old refresh token is blacklisted)
-- OAuth 2.0 support for Google and Apple with automatic account linking by email
+- Blacklist checked in Redis first, then DB fallback
+- OAuth 2.0 for Google and Apple with automatic account linking by email
 - Passwords hashed with bcrypt
+
+### Recommendation Engine
+
+Content-based filtering from swipe history:
+1. Swipe events logged with genre/author/category metadata
+2. `UserPreference` aggregates scores from liked vs. skipped actions
+3. `RecommendationService` scores candidate books against preference profile
+4. Cold start: falls back to popular books in preferred categories
+
+## Database Schema
+
+11 tables across 4 domains:
+
+**Users & Auth:**
+- `users` -- Accounts (email, OAuth, Stripe fields, ban/delete support)
+- `blacklisted_tokens` -- JWT revocation by JTI
+
+**Books & Discovery:**
+- `liked_books` -- User liked books (unique per user+book)
+- `skipped_books` -- User skipped books
+- `categories` -- 14 book categories with Google Books mapping
+- `daily_swipe_counts` -- Free tier swipe limits per day
+
+**Recommendations:**
+- `swipe_events` -- Every swipe action with book metadata
+- `user_preferences` -- Aggregated taste profile (JSON scores)
+
+**Notifications:**
+- `device_tokens` -- FCM push tokens per device
+- `notification_preferences` -- Per-user opt-in settings
+- `notifications` -- Notification inbox/history
 
 ## Frontend Architecture
 
@@ -115,7 +206,7 @@ JSON Response:
 ┌─────────────┐
 │  Services   │  (API client, secure storage)
 └──────┬──────┘
-       │ HTTP
+       │ HTTP (Dio)
        ▼
 ┌─────────────┐
 │   Backend   │
@@ -123,9 +214,7 @@ JSON Response:
 └─────────────┘
 ```
 
-### State Management
-
-Uses **Riverpod** with these provider types:
+### State Management (Riverpod)
 
 | Provider | Purpose |
 |----------|---------|
@@ -138,14 +227,46 @@ Uses **Riverpod** with these provider types:
 
 ### Error Handling
 
-- `ApiService` includes retry logic with exponential backoff for network errors (3 retries)
+- `ApiService` includes retry logic with exponential backoff (3 retries)
 - All providers use `AsyncValue` for loading/data/error states
 - `formatError()` converts `DioException` to user-friendly messages
-- `ErrorView` widget provides consistent error display with retry button
+- `ErrorView` widget provides consistent error display with retry
 
 ### Navigation
 
 GoRouter with shell routes for bottom navigation and modal routes for auth and book detail screens.
+
+## Infrastructure
+
+### Docker Compose (Development)
+
+```
+docker-compose.yml
+├── db        (postgres:16-alpine)     :5432
+├── redis     (redis:7-alpine)         :6379
+├── backend   (FastAPI + gunicorn)     :8000
+└── frontend  (Flutter web + nginx)    :8080
+```
+
+### Docker Compose (Production)
+
+```
+docker-compose.prod.yml
+├── db        (postgres:16-alpine)     internal
+├── redis     (redis:7-alpine)         internal
+├── backend   (FastAPI + gunicorn)     internal
+├── nginx     (reverse proxy)          :80
+└── backup    (pg_dump cron)           internal
+```
+
+### CI/CD Pipelines
+
+| Workflow | Trigger | Steps |
+|----------|---------|-------|
+| `backend-ci.yml` | Push/PR to main on `backend/**` | Lint, test, coverage, Docker build |
+| `frontend-ci.yml` | Push/PR to main on `frontend/**` | Analyze, test, Docker build |
+| `deploy.yml` | Push to main | Test, build+push to ghcr.io, deploy staging |
+| `release.yml` | Tag push (`v*`) | Test, build+push, changelog, GitHub Release |
 
 ## Data Flow: Book Discovery
 
@@ -154,7 +275,7 @@ GoRouter with shell routes for bottom navigation and modal routes for auth and b
 3. `discoverBooksProvider` rebuilds, calling `ApiService.discoverBooks()`
 4. `ApiService` sends GET `/api/books/discover?category=fiction`
 5. Backend router delegates to `google_books.search_books()`
-6. Service checks cache, then calls Google Books API
+6. Service checks Redis cache, then calls Google Books API
 7. Repository provides excluded book IDs for authenticated users
 8. Response is parsed into `BookSummary` schemas and returned
 9. Flutter renders `BookCard` widgets for swiping
@@ -166,4 +287,5 @@ GoRouter with shell routes for bottom navigation and modal routes for auth and b
 3. `LikedBooksNotifier.likeBook()` optimistically adds it to liked list
 4. `ApiService.likeBook()` sends POST `/api/books/like`
 5. Backend `BookRepository.create_liked_book()` persists to database
-6. On error, the liked books provider enters error state with user-friendly message
+6. `SwipeEvent` is recorded for preference learning
+7. On error, the liked books provider enters error state with message
