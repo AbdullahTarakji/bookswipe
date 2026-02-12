@@ -1,4 +1,7 @@
-"""Authentication router handling registration, login, logout, and profile."""
+"""Authentication router handling registration, login, logout, OAuth, and profile."""
+
+import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
@@ -9,6 +12,8 @@ from app.database import get_db
 from app.models import User
 from app.repositories.user_repository import UserRepository, get_user_repository
 from app.schemas import (
+    AppleAuthRequest,
+    GoogleAuthRequest,
     MessageResponse,
     TokenRefresh,
     TokenResponse,
@@ -24,8 +29,10 @@ from app.services.auth import (
     get_current_user,
     oauth2_scheme,
 )
+from app.services.oauth import verify_apple_token, verify_google_token
 from app.services.user_service import UserService, get_user_service
 
+logger = logging.getLogger("bookswipe")
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -52,6 +59,42 @@ def _get_user_service(repo: UserRepository = Depends(_get_user_repo)) -> UserSer
         A UserService instance.
     """
     return get_user_service(repo)
+
+
+def _get_or_create_oauth_user(db: Session, email: str, provider: str, provider_id: str) -> User:
+    """Find existing user by email or create a new one for OAuth login.
+
+    If user exists with same email from a different provider, link accounts
+    by updating provider fields (same email = same account).
+
+    Args:
+        db: SQLAlchemy database session.
+        email: The user's email from the OAuth provider.
+        provider: OAuth provider name ('google' or 'apple').
+        provider_id: The provider's unique subject identifier.
+
+    Returns:
+        The existing or newly created User.
+    """
+    user = db.query(User).filter(User.email == email, User.is_active.is_(True)).first()
+    if user:
+        # Link: update provider info if this is a different provider
+        if user.auth_provider == "email" or user.auth_provider != provider:
+            user.auth_provider = provider
+            user.provider_id = provider_id
+            db.commit()
+        return user
+    # Create new user (no password for OAuth users)
+    user = User(
+        email=email,
+        hashed_password="",
+        auth_provider=provider,
+        provider_id=provider_id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -92,6 +135,70 @@ def login(
         Token response with access and refresh tokens.
     """
     return service.login(body.email, body.password)
+
+
+@router.post("/google", response_model=TokenResponse)
+@limiter.limit("5/minute")
+def google_auth(request: Request, body: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """Authenticate via Google OAuth.
+
+    Args:
+        request: The incoming HTTP request (required by rate limiter).
+        body: Google ID token payload.
+        db: Database session.
+
+    Returns:
+        Token response with access and refresh tokens.
+    """
+    try:
+        google_user = verify_google_token(body.id_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    user = _get_or_create_oauth_user(
+        db,
+        email=google_user["email"],
+        provider="google",
+        provider_id=google_user["sub"],
+    )
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+@router.post("/apple", response_model=TokenResponse)
+@limiter.limit("5/minute")
+def apple_auth(request: Request, body: AppleAuthRequest, db: Session = Depends(get_db)):
+    """Authenticate via Apple Sign In.
+
+    Args:
+        request: The incoming HTTP request (required by rate limiter).
+        body: Apple identity token payload.
+        db: Database session.
+
+    Returns:
+        Token response with access and refresh tokens.
+    """
+    try:
+        apple_user = verify_apple_token(body.identity_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    user = _get_or_create_oauth_user(
+        db,
+        email=apple_user["email"],
+        provider="apple",
+        provider_id=apple_user["sub"],
+    )
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
 
 
 @router.post("/logout", response_model=MessageResponse)

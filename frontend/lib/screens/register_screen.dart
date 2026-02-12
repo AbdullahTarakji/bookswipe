@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../utils/validators.dart';
+import '../widgets/social_login_buttons.dart';
 
 /// Account registration form with email, password, and confirmation fields.
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -133,6 +134,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           : const Text('Create Account'),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'or',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const SocialLoginButtons(),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => context.go('/login'),
