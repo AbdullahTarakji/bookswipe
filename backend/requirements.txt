@@ -24,6 +24,8 @@ python-json-logger>=2.0.0,<3.0.0
 sentry-sdk[fastapi]>=2.0.0,<3.0.0
 # Payments
 stripe>=8.0.0,<10.0.0
+# Push notifications
+firebase-admin>=6.0.0,<7.0.0
 # Background jobs
 arq>=0.26.0,<1.0.0
 # Production WSGI/ASGI server

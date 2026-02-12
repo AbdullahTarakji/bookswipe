@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     prometheus_enabled: bool = True
     log_level: str = "INFO"
 
+    # Firebase Cloud Messaging
+    fcm_credentials_path: str = ""
+
     # Admin seeding
     admin_email: str = ""
     admin_password: str = ""

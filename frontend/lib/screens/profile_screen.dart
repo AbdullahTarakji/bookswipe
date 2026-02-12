@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/notification_providers.dart';
 import '../providers/providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -45,8 +46,22 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => context.push('/notifications'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -125,6 +140,13 @@ class ProfileScreen extends ConsumerWidget {
                   title: const Text('Categories'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.go('/categories'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notifications'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/notifications/preferences'),
                 ),
                 const Divider(height: 1),
                 ListTile(

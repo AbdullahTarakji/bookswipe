@@ -39,6 +39,11 @@ class User(Base):
     preferences: Mapped["UserPreference | None"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
     )
+    device_tokens: Mapped[list["DeviceToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    notification_preference: Mapped["NotificationPreference | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+    notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     @property
     def is_premium(self) -> bool:
@@ -155,6 +160,60 @@ class UserPreference(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="preferences")
+
+
+class DeviceToken(Base):
+    """FCM device token for push notification delivery."""
+
+    __tablename__ = "device_tokens"
+    __table_args__ = (
+        UniqueConstraint("user_id", "token", name="uq_user_device_token"),
+        Index("ix_device_tokens_user_id", "user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token: Mapped[str] = mapped_column(String(500), nullable=False)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False, default="android")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="device_tokens")
+
+
+class NotificationPreference(Base):
+    """Per-user notification category preferences."""
+
+    __tablename__ = "notification_preferences"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    recommendations: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    social: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    marketing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+
+    user: Mapped["User"] = relationship(back_populates="notification_preference")
+
+
+class Notification(Base):
+    """Stored notification record for user history/inbox."""
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(String(1000), nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False, default="general")
+    deep_link: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="notifications")
 
 
 SEED_CATEGORIES = [

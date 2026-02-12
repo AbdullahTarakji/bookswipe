@@ -353,3 +353,61 @@ class PaginatedRecommendations(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# --- Notifications ---
+
+
+class DeviceTokenRegister(BaseModel):
+    """Request schema for registering an FCM device token."""
+
+    token: str = Field(..., min_length=1, max_length=500)
+    platform: str = Field(default="android", pattern=r"^(android|ios|web)$")
+
+
+class DeviceTokenUnregister(BaseModel):
+    """Request schema for removing an FCM device token."""
+
+    token: str = Field(..., min_length=1, max_length=500)
+
+
+class NotificationPreferenceResponse(BaseModel):
+    """Response schema for notification preferences."""
+
+    recommendations: bool = True
+    social: bool = True
+    marketing: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationPreferenceUpdate(BaseModel):
+    """Request schema for updating notification preferences."""
+
+    recommendations: bool | None = None
+    social: bool | None = None
+    marketing: bool | None = None
+
+
+class NotificationResponse(BaseModel):
+    """Response schema for a single notification."""
+
+    id: int
+    title: str
+    body: str
+    category: str
+    deep_link: str | None = None
+    is_read: bool
+    created_at: datetime.datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedNotifications(BaseModel):
+    """Paginated response containing notification records."""
+
+    notifications: list[NotificationResponse]
+    total: int
+    page: int
+    page_size: int
+    unread_count: int

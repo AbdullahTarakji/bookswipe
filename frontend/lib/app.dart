@@ -10,6 +10,8 @@ import 'screens/categories_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/liked_books_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/notification_inbox_screen.dart';
+import 'screens/notification_preferences_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/subscription_screen.dart';
@@ -91,6 +93,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/subscription',
         builder: (context, state) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/notifications',
+        builder: (context, state) => const NotificationInboxScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/notifications/preferences',
+        builder: (context, state) => const NotificationPreferencesScreen(),
       ),
     ],
   );

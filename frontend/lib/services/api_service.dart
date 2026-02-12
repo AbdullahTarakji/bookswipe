@@ -354,6 +354,77 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  // --- Notifications ---
+
+  /// Register an FCM device token for push notifications.
+  Future<void> registerDeviceToken(String token, {String platform = 'android'}) async {
+    await _requestWithRetry(
+      () => _dio.post('/api/notifications/register-device', data: {
+        'token': token,
+        'platform': platform,
+      }),
+    );
+  }
+
+  /// Unregister an FCM device token.
+  Future<void> unregisterDeviceToken(String token) async {
+    await _requestWithRetry(
+      () => _dio.post('/api/notifications/unregister-device', data: {
+        'token': token,
+      }),
+    );
+  }
+
+  /// Fetch notification preferences.
+  Future<Map<String, dynamic>> getNotificationPreferences() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/notifications/preferences'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Update notification preferences.
+  Future<Map<String, dynamic>> updateNotificationPreferences({
+    bool? recommendations,
+    bool? social,
+    bool? marketing,
+  }) async {
+    final data = <String, dynamic>{};
+    if (recommendations != null) data['recommendations'] = recommendations;
+    if (social != null) data['social'] = social;
+    if (marketing != null) data['marketing'] = marketing;
+
+    final response = await _requestWithRetry(
+      () => _dio.put('/api/notifications/preferences', data: data),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Fetch notification history with pagination.
+  Future<Map<String, dynamic>> getNotificationHistory({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/notifications/history', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Mark a notification as read.
+  Future<void> markNotificationRead(int notificationId) async {
+    await _requestWithRetry(
+      () => _dio.post('/api/notifications/history/$notificationId/read'),
+    );
+  }
+
+  /// Mark all notifications as read.
+  Future<void> markAllNotificationsRead() async {
+    await _requestWithRetry(
+      () => _dio.post('/api/notifications/history/read-all'),
+    );
+  }
+
   /// Format a [DioException] into a user-friendly error message.
   static String formatError(DioException e) {
     if (e.response != null) {

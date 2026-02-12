@@ -52,3 +52,28 @@ async def compute_all_preferences(ctx: dict) -> int:
         return count
     finally:
         db.close()
+
+
+async def send_queued_notification(
+    ctx: dict,
+    user_id: int,
+    title: str,
+    body: str,
+    category: str = "general",
+    deep_link: str | None = None,
+) -> int:
+    """Send a notification to a user via the background worker queue.
+
+    Stores the notification in history and delivers push to all registered devices.
+    Returns the notification ID.
+    """
+    from app.database import SessionLocal
+    from app.services.notification import notify_user
+
+    db = SessionLocal()
+    try:
+        notif = notify_user(db, user_id, title, body, category=category, deep_link=deep_link)
+        logger.info("send_queued_notification delivered id=%d to user=%d", notif.id, user_id)
+        return notif.id
+    finally:
+        db.close()
