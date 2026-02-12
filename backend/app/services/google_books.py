@@ -1,3 +1,5 @@
+"""Google Books API integration with caching and per-user rate limiting."""
+
 import time
 from typing import Any
 
@@ -5,6 +7,7 @@ import httpx
 from cachetools import TTLCache
 
 from app.config import settings
+from app.exceptions import ExternalAPIError, NotFoundError, RateLimitError
 from app.schemas import BookDetail, BookSummary
 
 _cache: TTLCache = TTLCache(maxsize=1024, ttl=settings.google_books_cache_ttl)
@@ -12,6 +15,7 @@ _rate_limits: dict[int, list[float]] = {}
 
 
 def _check_rate_limit(user_id: int | None) -> None:
+    """Enforce per-user rate limits on Google Books API access."""
     if user_id is None:
         return
     now = time.time()
@@ -20,17 +24,13 @@ def _check_rate_limit(user_id: int | None) -> None:
     timestamps = _rate_limits.get(key, [])
     timestamps = [t for t in timestamps if now - t < window]
     if len(timestamps) >= settings.rate_limit_requests:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit exceeded. Try again later.",
-        )
+        raise RateLimitError()
     timestamps.append(now)
     _rate_limits[key] = timestamps
 
 
 def _parse_book_summary(item: dict[str, Any]) -> BookSummary:
+    """Parse a Google Books API volume item into a BookSummary schema."""
     info = item.get("volumeInfo", {})
     image_links = info.get("imageLinks", {})
     thumbnail = image_links.get("thumbnail", image_links.get("smallThumbnail", ""))
@@ -49,6 +49,7 @@ def _parse_book_summary(item: dict[str, Any]) -> BookSummary:
 
 
 def _parse_book_detail(item: dict[str, Any]) -> BookDetail:
+    """Parse a Google Books API volume item into a BookDetail schema."""
     info = item.get("volumeInfo", {})
     image_links = info.get("imageLinks", {})
     thumbnail = image_links.get("thumbnail", image_links.get("smallThumbnail", ""))
@@ -78,6 +79,11 @@ async def search_books(
     exclude_ids: set[str] | None = None,
     user_id: int | None = None,
 ) -> tuple[list[BookSummary], int]:
+    """Search Google Books by category with caching and rate limiting.
+
+    Returns a tuple of (book summaries, total count).
+    Raises ExternalAPIError if the Google Books API is unreachable.
+    """
     _check_rate_limit(user_id)
 
     start_index = (page - 1) * page_size
@@ -98,16 +104,17 @@ async def search_books(
         if settings.google_books_api_key:
             params["key"] = settings.google_books_api_key
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(settings.google_books_api_url, params=params)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(settings.google_books_api_url, params=params)
+        except httpx.RequestError as exc:
+            raise ExternalAPIError(
+                "Google Books API is unreachable",
+                details=str(exc),
+            )
 
         if resp.status_code != 200:
-            from fastapi import HTTPException, status
-
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Google Books API error",
-            )
+            raise ExternalAPIError("Google Books API error")
 
         data = resp.json()
         total = data.get("totalItems", 0)
@@ -122,6 +129,11 @@ async def search_books(
 
 
 async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail:
+    """Fetch a single book's details from Google Books by ID.
+
+    Raises NotFoundError if the book does not exist.
+    Raises ExternalAPIError on API failures.
+    """
     _check_rate_limit(user_id)
 
     cache_key = f"book:{book_id}"
@@ -134,23 +146,19 @@ async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail
     if settings.google_books_api_key:
         params["key"] = settings.google_books_api_key
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(url, params=params)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, params=params)
+    except httpx.RequestError as exc:
+        raise ExternalAPIError(
+            "Google Books API is unreachable",
+            details=str(exc),
+        )
 
     if resp.status_code == 404:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found",
-        )
+        raise NotFoundError("Book not found")
     if resp.status_code != 200:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Google Books API error",
-        )
+        raise ExternalAPIError("Google Books API error")
 
     detail = _parse_book_detail(resp.json())
     _cache[cache_key] = detail
@@ -158,5 +166,6 @@ async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail
 
 
 def clear_cache() -> None:
+    """Clear the in-memory book cache and rate limit counters (for testing)."""
     _cache.clear()
     _rate_limits.clear()

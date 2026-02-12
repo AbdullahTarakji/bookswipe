@@ -1,3 +1,5 @@
+"""Pydantic request/response schemas for the BookSwipe API."""
+
 import datetime
 import re
 
@@ -60,6 +62,7 @@ def check_password_strength(password: str) -> dict:
 # --- Auth ---
 
 class UserRegister(BaseModel):
+    """Request schema for user registration with email and password."""
     email: EmailStr = Field(..., max_length=255)
     password: str = Field(..., min_length=8, max_length=128)
 
@@ -88,6 +91,7 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
+    """Request schema for user login with email and password."""
     email: EmailStr = Field(..., max_length=255)
     password: str = Field(..., max_length=128)
 
@@ -98,6 +102,7 @@ class UserLogin(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    """Response schema containing access and refresh JWT tokens."""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -105,10 +110,12 @@ class TokenResponse(BaseModel):
 
 
 class TokenRefresh(BaseModel):
+    """Request schema for token refresh."""
     refresh_token: str
 
 
 class UserResponse(BaseModel):
+    """Response schema for user profile information."""
     id: int
     email: str
     created_at: datetime.datetime
@@ -119,6 +126,7 @@ class UserResponse(BaseModel):
 # --- Categories ---
 
 class CategoryResponse(BaseModel):
+    """Response schema for a book category."""
     id: int
     name: str
     google_category_key: str
@@ -129,6 +137,7 @@ class CategoryResponse(BaseModel):
 # --- Books ---
 
 class BookSummary(BaseModel):
+    """Summary of a book used in discovery listings."""
     google_book_id: str
     title: str
     authors: list[str]
@@ -139,6 +148,7 @@ class BookSummary(BaseModel):
 
 
 class BookDetail(BookSummary):
+    """Full book details including description and metadata."""
     description: str
     page_count: int | None = None
     published_date: str | None = None
@@ -148,6 +158,7 @@ class BookDetail(BookSummary):
 
 
 class BookAction(BaseModel):
+    """Request schema for liking or skipping a book."""
     google_book_id: str = Field(..., max_length=50)
     title: str = Field(default="", max_length=500)
     authors: str = Field(default="", max_length=500)
@@ -160,6 +171,7 @@ class BookAction(BaseModel):
 
 
 class LikedBookResponse(BaseModel):
+    """Response schema for a liked book record."""
     id: int
     google_book_id: str
     title: str
@@ -171,6 +183,7 @@ class LikedBookResponse(BaseModel):
 
 
 class PaginatedBooks(BaseModel):
+    """Paginated response containing book summaries."""
     books: list[BookSummary]
     total: int
     page: int
@@ -178,6 +191,7 @@ class PaginatedBooks(BaseModel):
 
 
 class PaginatedLikedBooks(BaseModel):
+    """Paginated response containing liked book records."""
     books: list[LikedBookResponse]
     total: int
     page: int
@@ -185,13 +199,16 @@ class PaginatedLikedBooks(BaseModel):
 
 
 class GoogleAuthRequest(BaseModel):
+    """Request schema for Google OAuth sign-in."""
     id_token: str
 
 
 class AppleAuthRequest(BaseModel):
+    """Request schema for Apple OAuth sign-in."""
     authorization_code: str
     identity_token: str
 
 
 class MessageResponse(BaseModel):
+    """Generic response schema containing a status message."""
     message: str

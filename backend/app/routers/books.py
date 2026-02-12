@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+"""Book router: discovery, likes, skips, and book detail endpoints."""
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import LikedBook, SkippedBook, User
+from app.exceptions import NotFoundError, ValidationError
+from app.models import User
+from app.repositories.book_repository import BookRepository
 from app.schemas import (
     BookAction,
     BookDetail,
@@ -25,17 +29,13 @@ async def discover_books(
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
+    """Discover books by category, excluding already liked/skipped books."""
     exclude_ids: set[str] = set()
     user_id: int | None = None
     if current_user:
         user_id = current_user.id
-        liked_ids = db.query(LikedBook.google_book_id).filter(
-            LikedBook.user_id == current_user.id
-        ).all()
-        skipped_ids = db.query(SkippedBook.google_book_id).filter(
-            SkippedBook.user_id == current_user.id
-        ).all()
-        exclude_ids = {row[0] for row in liked_ids} | {row[0] for row in skipped_ids}
+        repo = BookRepository(db)
+        exclude_ids = repo.get_excluded_book_ids(current_user.id)
 
     books, total = await search_books(
         category=category,
@@ -54,14 +54,9 @@ def get_liked_books(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = db.query(LikedBook).filter(LikedBook.user_id == current_user.id)
-    total = query.count()
-    books = (
-        query.order_by(LikedBook.liked_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    """Return a paginated list of the authenticated user's liked books."""
+    repo = BookRepository(db)
+    books, total = repo.get_liked_books(current_user.id, page, page_size)
     return PaginatedLikedBooks(books=books, total=total, page=page, page_size=page_size)
 
 
@@ -70,6 +65,7 @@ async def get_book_detail(
     book_id: str,
     current_user: User | None = Depends(get_optional_user),
 ):
+    """Fetch detailed information for a single book by Google Books ID."""
     user_id = current_user.id if current_user else None
     return await get_book_by_id(book_id, user_id=user_id)
 
@@ -80,29 +76,18 @@ def like_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    existing = (
-        db.query(LikedBook)
-        .filter(
-            LikedBook.user_id == current_user.id,
-            LikedBook.google_book_id == body.google_book_id,
-        )
-        .first()
-    )
+    """Add a book to the authenticated user's liked list."""
+    repo = BookRepository(db)
+    existing = repo.get_liked_book(current_user.id, body.google_book_id)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Book already liked",
-        )
-    liked = LikedBook(
+        raise ValidationError("Book already liked")
+    liked = repo.create_liked_book(
         user_id=current_user.id,
         google_book_id=body.google_book_id,
         title=body.title,
         authors=body.authors,
         thumbnail=body.thumbnail,
     )
-    db.add(liked)
-    db.commit()
-    db.refresh(liked)
     return liked
 
 
@@ -112,22 +97,12 @@ def skip_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    existing = (
-        db.query(SkippedBook)
-        .filter(
-            SkippedBook.user_id == current_user.id,
-            SkippedBook.google_book_id == body.google_book_id,
-        )
-        .first()
-    )
+    """Mark a book as skipped for the authenticated user."""
+    repo = BookRepository(db)
+    existing = repo.get_skipped_book(current_user.id, body.google_book_id)
     if existing:
         return MessageResponse(message="Book already skipped")
-    skipped = SkippedBook(
-        user_id=current_user.id,
-        google_book_id=body.google_book_id,
-    )
-    db.add(skipped)
-    db.commit()
+    repo.create_skipped_book(user_id=current_user.id, google_book_id=body.google_book_id)
     return MessageResponse(message="Book skipped")
 
 
@@ -137,19 +112,10 @@ def unlike_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    liked = (
-        db.query(LikedBook)
-        .filter(
-            LikedBook.user_id == current_user.id,
-            LikedBook.google_book_id == google_book_id,
-        )
-        .first()
-    )
+    """Remove a book from the authenticated user's liked list."""
+    repo = BookRepository(db)
+    liked = repo.get_liked_book(current_user.id, google_book_id)
     if not liked:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Liked book not found",
-        )
-    db.delete(liked)
-    db.commit()
+        raise NotFoundError("Liked book not found")
+    repo.delete_liked_book(liked)
     return MessageResponse(message="Book removed from liked list")

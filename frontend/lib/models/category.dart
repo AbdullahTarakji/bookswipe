@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// A book category with display metadata (icon, color) for the UI.
 class BookCategory {
   final String name;
   final String key;

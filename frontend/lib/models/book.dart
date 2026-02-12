@@ -1,3 +1,4 @@
+/// Represents a book with metadata from Google Books or the backend API.
 class Book {
   final String id;
   final String title;

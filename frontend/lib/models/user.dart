@@ -1,3 +1,4 @@
+/// Represents an authenticated user with their JWT tokens.
 class User {
   final String id;
   final String email;

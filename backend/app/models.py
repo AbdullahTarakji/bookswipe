@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM models for the BookSwipe database schema."""
+
 import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, func
@@ -7,6 +9,7 @@ from app.database import Base
 
 
 class User(Base):
+    """Application user account with support for email and OAuth authentication."""
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -26,6 +29,7 @@ class User(Base):
 
 
 class BlacklistedToken(Base):
+    """Revoked JWT tokens tracked by their unique JTI claim."""
     __tablename__ = "blacklisted_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -36,6 +40,7 @@ class BlacklistedToken(Base):
 
 
 class LikedBook(Base):
+    """A book that a user has liked (swiped right on)."""
     __tablename__ = "liked_books"
     __table_args__ = (
         UniqueConstraint("user_id", "google_book_id", name="uq_user_liked_book"),
@@ -56,6 +61,7 @@ class LikedBook(Base):
 
 
 class SkippedBook(Base):
+    """A book that a user has skipped (swiped left on)."""
     __tablename__ = "skipped_books"
     __table_args__ = (
         UniqueConstraint("user_id", "google_book_id", name="uq_user_skipped_book"),
@@ -73,6 +79,7 @@ class SkippedBook(Base):
 
 
 class Category(Base):
+    """A book category used to organize and filter book discovery."""
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
