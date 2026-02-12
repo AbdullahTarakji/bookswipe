@@ -163,7 +163,7 @@ void main() {
       expect(json['is_liked'], true);
     });
 
-    test('highResThumbnail replaces zoom parameter', () {
+    test('highResThumbnail returns url as-is', () {
       const book = Book(
         id: '1',
         title: 'Test',
@@ -171,8 +171,7 @@ void main() {
         thumbnailUrl: 'https://books.google.com/thumb?zoom=1',
       );
 
-      expect(book.highResThumbnail, contains('zoom=2'));
-      expect(book.highResThumbnail, isNot(contains('zoom=1')));
+      expect(book.highResThumbnail, 'https://books.google.com/thumb?zoom=1');
     });
   });
 }

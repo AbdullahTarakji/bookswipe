@@ -9,12 +9,15 @@ import '../models/book.dart';
 import '../providers/providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/book_card.dart';
-import '../widgets/swipe_overlay.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/shimmer_loading.dart';
+import '../widgets/swipe_overlay.dart';
+import '../widgets/swipe_snackbar.dart';
 
 /// Main discovery screen — Tinder-style full-screen card swiping.
 class HomeScreen extends ConsumerStatefulWidget {
+  /// Creates the home discovery screen.
   const HomeScreen({super.key});
 
   @override
@@ -45,7 +48,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             // ── Tinder-style top bar ──
             _TopBar(
-              onRefresh: () => ref.read(discoverBooksProvider.notifier).refresh(),
+              onRefresh: () =>
+                  ref.read(discoverBooksProvider.notifier).refresh(),
             ),
 
             // ── Swipe limit indicator (free users only) ──
@@ -54,14 +58,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // ── Card stack ──
             Expanded(
               child: booksAsync.when(
-                loading: () => const LoadingIndicator(message: 'Finding books...'),
+                loading: () => const HomeShimmer(),
                 error: (error, _) => ErrorView(
                   message: error.toString(),
-                  onRetry: () => ref.read(discoverBooksProvider.notifier).refresh(),
+                  onRetry: () =>
+                      ref.read(discoverBooksProvider.notifier).refresh(),
                 ),
                 data: (books) {
-                  if (books.isEmpty) return _buildEmptyState();
-                  return _buildCardArea(books);
+                  if (books.isEmpty) {
+                    return EmptyState.noBooks(
+                      onAction: () =>
+                          ref.read(discoverBooksProvider.notifier).refresh(),
+                    );
+                  }
+                  return RefreshIndicator(
+                    color: AppTheme.tinderRed,
+                    onRefresh: () async {
+                      await ref
+                          .read(discoverBooksProvider.notifier)
+                          .refresh();
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.75,
+                        child: _buildCardArea(books),
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
@@ -84,19 +108,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               cardsCount: books.length,
               numberOfCardsDisplayed: books.length.clamp(1, 3),
               backCardOffset: const Offset(0, -40),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               scale: 0.95,
               onSwipe: (previousIndex, currentIndex, direction) {
                 _onSwipe(books[previousIndex], direction);
-                final remaining = currentIndex == null ? 0 : books.length - currentIndex;
-                ref.read(discoverBooksProvider.notifier).maybeLoadMore(remaining);
+                final remaining = currentIndex == null
+                    ? 0
+                    : books.length - currentIndex;
+                ref
+                    .read(discoverBooksProvider.notifier)
+                    .maybeLoadMore(remaining);
                 setState(() => _swipeProgress = 0);
                 return true;
               },
-              onSwipeDirectionChange: (horizontalDirection, verticalDirection) {
+              onSwipeDirectionChange:
+                  (horizontalDirection, verticalDirection) {
                 setState(() {
-                  _swipingRight = horizontalDirection == CardSwiperDirection.right;
-                  _swipeProgress = (horizontalDirection == CardSwiperDirection.right ||
+                  _swipingRight =
+                      horizontalDirection == CardSwiperDirection.right;
+                  _swipeProgress = (horizontalDirection ==
+                              CardSwiperDirection.right ||
                           horizontalDirection == CardSwiperDirection.left)
                       ? 0.8
                       : 0.0;
@@ -105,7 +137,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onEnd: () {
                 ref.read(discoverBooksProvider.notifier).loadMore();
               },
-              cardBuilder: (context, index, percentThresholdX, percentThresholdY) {
+              cardBuilder:
+                  (context, index, percentThresholdX, percentThresholdY) {
                 return Stack(
                   fit: StackFit.expand,
                   children: [
@@ -129,9 +162,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // ── Tinder action buttons ──
         _ActionButtons(
           onRewind: () => _handleRewind(),
-          onNope: () => _swiperController.swipe(CardSwiperDirection.left),
-          onSuperLike: () => _swiperController.swipe(CardSwiperDirection.top),
-          onLike: () => _swiperController.swipe(CardSwiperDirection.right),
+          onNope: () =>
+              _swiperController.swipe(CardSwiperDirection.left),
+          onSuperLike: () =>
+              _swiperController.swipe(CardSwiperDirection.top),
+          onLike: () =>
+              _swiperController.swipe(CardSwiperDirection.right),
         ),
 
         const SizedBox(height: 8),
@@ -160,7 +196,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     value: (used / limit).clamp(0.0, 1.0),
                     backgroundColor: Colors.grey.shade200,
                     valueColor: AlwaysStoppedAnimation(
-                      used >= limit ? AppTheme.nopeRed : AppTheme.tinderRed,
+                      used >= limit
+                          ? AppTheme.nopeRed
+                          : AppTheme.tinderRed,
                     ),
                     minHeight: 4,
                   ),
@@ -172,7 +210,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: remaining <= 3 ? AppTheme.nopeRed : AppTheme.textSecondary,
+                  color: remaining <= 3
+                      ? AppTheme.nopeRed
+                      : AppTheme.textSecondary,
                 ),
               ),
             ],
@@ -190,15 +230,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _handleSkipSwipe(book);
     } else if (direction == CardSwiperDirection.top) {
       // Super like = also a like
-      _handleLikeSwipe(book);
+      _handleSuperLikeSwipe(book);
     }
   }
 
   Future<void> _handleLikeSwipe(Book book) async {
     try {
       await ref.read(likedBooksProvider.notifier).likeBook(book);
-      ref.read(discoverBooksProvider.notifier).setLastSwiped(book, wasLiked: true);
+      ref
+          .read(discoverBooksProvider.notifier)
+          .setLastSwiped(book, wasLiked: true);
       ref.invalidate(swipeStatusProvider);
+      if (mounted) showLikedSnackBar(context, book.title);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        _showUpgradePrompt();
+      }
+    }
+  }
+
+  Future<void> _handleSuperLikeSwipe(Book book) async {
+    try {
+      await ref.read(likedBooksProvider.notifier).likeBook(book);
+      ref
+          .read(discoverBooksProvider.notifier)
+          .setLastSwiped(book, wasLiked: true);
+      ref.invalidate(swipeStatusProvider);
+      if (mounted) showSuperLikedSnackBar(context, book.title);
     } on DioException catch (e) {
       if (e.response?.statusCode == 429) {
         _showUpgradePrompt();
@@ -210,8 +268,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final api = ref.read(apiServiceProvider);
       await api.skipBook(book.id);
-      ref.read(discoverBooksProvider.notifier).setLastSwiped(book, wasLiked: false);
+      ref
+          .read(discoverBooksProvider.notifier)
+          .setLastSwiped(book, wasLiked: false);
       ref.invalidate(swipeStatusProvider);
+      if (mounted) showSkippedSnackBar(context, book.title);
     } on DioException catch (e) {
       if (e.response?.statusCode == 429) {
         _showUpgradePrompt();
@@ -248,41 +309,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.auto_stories_rounded,
-            size: 80,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No more books!',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try a different category or check back later.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 28),
-          FilledButton.icon(
-            onPressed: () => ref.read(discoverBooksProvider.notifier).refresh(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -307,7 +333,8 @@ class _TopBar extends StatelessWidget {
           const Spacer(),
           // Centre logo
           ShaderMask(
-            shaderCallback: (bounds) => AppTheme.tinderGradient.createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppTheme.tinderGradient.createShader(bounds),
             child: const Icon(
               Icons.local_fire_department,
               size: 36,
@@ -424,7 +451,8 @@ class _CircleButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Theme.of(context).scaffoldBackgroundColor,
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          border:
+              Border.all(color: color.withValues(alpha: 0.3), width: 2),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.15),
@@ -458,7 +486,8 @@ class _BookDetailSheet extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: ListView(
             controller: controller,
@@ -493,8 +522,10 @@ class _BookDetailSheet extends StatelessWidget {
                           memCacheWidth: 800,
                           maxWidthDiskCache: 800,
                           errorWidget: (ctx, url, err) => Container(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            child: const Center(child: Icon(Icons.book, size: 80)),
+                            color:
+                                theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                                child: Icon(Icons.book, size: 80)),
                           ),
                         ),
                       ),
@@ -530,25 +561,30 @@ class _BookDetailSheet extends StatelessWidget {
                     Row(
                       children: [
                         if (book.averageRating != null) ...[
-                          const Icon(Icons.star_rounded, size: 20, color: AppTheme.rewindYellow),
+                          const Icon(Icons.star_rounded,
+                              size: 20, color: AppTheme.rewindYellow),
                           const SizedBox(width: 4),
                           Text(
                             book.averageRating!.toStringAsFixed(1),
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold),
                           ),
                           if (book.ratingsCount != null)
                             Text(
                               ' (${book.ratingsCount} ratings)',
-                              style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.textSecondary),
                             ),
                           const SizedBox(width: 16),
                         ],
                         if (book.pageCount != null) ...[
-                          const Icon(Icons.menu_book_rounded, size: 18, color: AppTheme.textSecondary),
+                          const Icon(Icons.menu_book_rounded,
+                              size: 18, color: AppTheme.textSecondary),
                           const SizedBox(width: 4),
                           Text(
                             '${book.pageCount} pages',
-                            style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary),
                           ),
                         ],
                       ],
@@ -562,9 +598,11 @@ class _BookDetailSheet extends StatelessWidget {
                         runSpacing: 6,
                         children: book.categories.map((cat) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppTheme.tinderRed.withValues(alpha: 0.1),
+                              color: AppTheme.tinderRed
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
@@ -581,11 +619,13 @@ class _BookDetailSheet extends StatelessWidget {
                     ],
 
                     // Description
-                    if (book.description != null && book.description!.isNotEmpty) ...[
+                    if (book.description != null &&
+                        book.description!.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       Text(
                         'About this book',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -598,17 +638,20 @@ class _BookDetailSheet extends StatelessWidget {
                     ],
 
                     // Publisher / Date
-                    if (book.publisher != null || book.publishedDate != null) ...[
+                    if (book.publisher != null ||
+                        book.publishedDate != null) ...[
                       const SizedBox(height: 20),
                       if (book.publisher != null)
                         Text(
                           'Published by ${book.publisher}',
-                          style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.textSecondary),
                         ),
                       if (book.publishedDate != null)
                         Text(
                           book.publishedDate!,
-                          style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.textSecondary),
                         ),
                     ],
 
