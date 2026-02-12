@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.exceptions import NotFoundError, ValidationError
+from app.metrics import books_liked_total, books_skipped_total
 from app.models import User
 from app.repositories.book_repository import BookRepository
 from app.schemas import (
@@ -88,6 +89,7 @@ def like_book(
         authors=body.authors,
         thumbnail=body.thumbnail,
     )
+    books_liked_total.inc()
     return liked
 
 
@@ -103,6 +105,7 @@ def skip_book(
     if existing:
         return MessageResponse(message="Book already skipped")
     repo.create_skipped_book(user_id=current_user.id, google_book_id=body.google_book_id)
+    books_skipped_total.inc()
     return MessageResponse(message="Book skipped")
 
 

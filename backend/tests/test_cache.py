@@ -177,6 +177,7 @@ class TestHealthEndpoint:
         resp = client.get("/health")
         assert resp.status_code == 200
         data = resp.json()
-        assert "redis" in data
-        assert data["redis"] in ("connected", "unavailable")
-        assert data["status"] == "ok"
+        assert "dependencies" in data
+        assert "redis" in data["dependencies"]
+        assert data["dependencies"]["redis"] in ("connected", "unavailable")
+        assert data["status"] in ("healthy", "unhealthy")

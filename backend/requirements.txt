@@ -18,3 +18,9 @@ bleach>=6.1.0,<7.0.0
 google-auth>=2.27.0,<3.0.0
 PyJWT>=2.8.0,<3.0.0
 requests
+# Monitoring & Observability
+prometheus-fastapi-instrumentator>=7.0.0,<8.0.0
+python-json-logger>=2.0.0,<3.0.0
+sentry-sdk[fastapi]>=2.0.0,<3.0.0
+# Background jobs
+arq>=0.26.0,<1.0.0
