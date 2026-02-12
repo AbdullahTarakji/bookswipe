@@ -1,3 +1,5 @@
+"""Authentication service for JWT token management and password hashing."""
+
 import datetime
 import uuid
 
@@ -16,14 +18,39 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 
 def hash_password(password: str) -> str:
+    """Hash a plaintext password using bcrypt.
+
+    Args:
+        password: The plaintext password to hash.
+
+    Returns:
+        The bcrypt-hashed password string.
+    """
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plaintext password against a bcrypt hash.
+
+    Args:
+        plain_password: The plaintext password to check.
+        hashed_password: The bcrypt hash to verify against.
+
+    Returns:
+        True if the password matches, False otherwise.
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(user_id: int) -> str:
+    """Create a short-lived JWT access token for a user.
+
+    Args:
+        user_id: The user's primary key to encode in the token.
+
+    Returns:
+        The encoded JWT access token string.
+    """
     expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         minutes=settings.access_token_expire_minutes
     )
@@ -42,6 +69,14 @@ def create_access_token(user_id: int) -> str:
 
 
 def create_refresh_token(user_id: int) -> str:
+    """Create a long-lived JWT refresh token for a user.
+
+    Args:
+        user_id: The user's primary key to encode in the token.
+
+    Returns:
+        The encoded JWT refresh token string.
+    """
     expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         days=settings.refresh_token_expire_days
     )
@@ -60,6 +95,19 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def decode_token(token: str, expected_type: str = "access", db: Session | None = None) -> int:
+    """Decode and validate a JWT token, returning the user ID.
+
+    Args:
+        token: The JWT token string to decode.
+        expected_type: Expected token type ('access' or 'refresh').
+        db: Optional database session for blacklist checking.
+
+    Returns:
+        The user ID extracted from the token.
+
+    Raises:
+        HTTPException: 401 if the token is invalid, expired, wrong type, or blacklisted.
+    """
     try:
         payload = jwt.decode(
             token,
@@ -126,6 +174,18 @@ def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """FastAPI dependency that extracts and validates the current authenticated user.
+
+    Args:
+        token: The Bearer token from the Authorization header.
+        db: Database session for user lookup and token validation.
+
+    Returns:
+        The authenticated active User.
+
+    Raises:
+        HTTPException: 401 if not authenticated or user not found.
+    """
     if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -147,6 +207,17 @@ def get_optional_user(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
+    """FastAPI dependency that optionally extracts the current user.
+
+    Returns None instead of raising an error when no valid token is provided.
+
+    Args:
+        token: The optional Bearer token from the Authorization header.
+        db: Database session for user lookup and token validation.
+
+    Returns:
+        The authenticated active User, or None if not authenticated.
+    """
     if token is None:
         return None
     try:

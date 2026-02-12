@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/book.dart';
 
+/// HTTP client service for communicating with the BookSwipe backend API.
 class ApiService {
   final Dio _dio;
   String? _refreshToken;
@@ -51,19 +52,23 @@ class ApiService {
     ));
   }
 
+  /// Set the Bearer token for authenticated requests.
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
+  /// Store the refresh token for automatic token renewal.
   void setRefreshToken(String token) {
     _refreshToken = token;
   }
 
+  /// Remove the auth and refresh tokens (used on logout).
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
     _refreshToken = null;
   }
 
+  /// Discover books by category with pagination.
   Future<List<Book>> discoverBooks({String? category, int page = 1}) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -76,11 +81,13 @@ class ApiService {
     return books.map((json) => Book.fromJson(json as Map<String, dynamic>)).toList();
   }
 
+  /// Get detailed information for a specific book.
   Future<Book> getBookDetails(String bookId) async {
     final response = await _dio.get('/api/books/$bookId');
     return Book.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Like a book, sending its metadata to the backend.
   Future<void> likeBook(Book book) async {
     await _dio.post('/api/books/like', data: {
       'google_book_id': book.id,
@@ -90,20 +97,24 @@ class ApiService {
     });
   }
 
+  /// Skip a book so it won't appear in future discovery.
   Future<void> skipBook(String bookId) async {
     await _dio.post('/api/books/skip', data: {'google_book_id': bookId});
   }
 
+  /// Fetch the authenticated user's liked books.
   Future<List<Book>> getLikedBooks() async {
     final response = await _dio.get('/api/books/liked');
     final books = response.data['books'] as List<dynamic>;
     return books.map((json) => Book.fromJson(json as Map<String, dynamic>)).toList();
   }
 
+  /// Remove a book from the user's liked list.
   Future<void> unlikeBook(String bookId) async {
     await _dio.delete('/api/books/liked/$bookId');
   }
 
+  /// Fetch all available book categories.
   Future<List<Map<String, dynamic>>> getCategories() async {
     final response = await _dio.get('/api/categories');
     return (response.data as List<dynamic>)
@@ -111,11 +122,13 @@ class ApiService {
         .toList();
   }
 
+  /// Fetch the authenticated user's profile.
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _dio.get('/api/auth/me');
     return response.data as Map<String, dynamic>;
   }
 
+  /// Authenticate with email and password, returning token data.
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await _dio.post('/api/auth/login', data: {
       'email': email,
@@ -124,6 +137,7 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Register a new account, returning token data.
   Future<Map<String, dynamic>> register(String email, String password) async {
     final response = await _dio.post('/api/auth/register', data: {
       'email': email,
@@ -132,6 +146,7 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Refresh an expired access token using a refresh token.
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     final response = await _dio.post('/api/auth/refresh', data: {
       'refresh_token': refreshToken,

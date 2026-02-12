@@ -1,3 +1,4 @@
+/// Represents a book with metadata from the Google Books API or backend.
 class Book {
   final String id;
   final String title;
@@ -29,11 +30,14 @@ class Book {
     this.isLiked = false,
   });
 
+  /// Returns a comma-separated string of all author names.
   String get authorsText => authors.join(', ');
 
+  /// Returns a higher-resolution thumbnail URL by adjusting the zoom level.
   String get highResThumbnail =>
       thumbnailUrl?.replaceAll('zoom=1', 'zoom=2') ?? '';
 
+  /// Creates a copy of this book with the given fields replaced.
   Book copyWith({
     String? id,
     String? title,
@@ -66,6 +70,7 @@ class Book {
     );
   }
 
+  /// Parses a book from JSON, auto-detecting Google Books or backend format.
   factory Book.fromJson(Map<String, dynamic> json) {
     // Google Books API format (has volumeInfo)
     if (json.containsKey('volumeInfo')) {
@@ -136,6 +141,7 @@ class Book {
     );
   }
 
+  /// Serializes this book to a JSON map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 
+/// A card displaying a book's cover image, title, author, and rating for the swipe deck.
 class BookCard extends StatelessWidget {
   final Book book;
   final VoidCallback? onTap;

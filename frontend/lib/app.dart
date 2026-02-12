@@ -69,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Root widget that configures MaterialApp with routing and theming.
 class BookSwipeApp extends ConsumerWidget {
   const BookSwipeApp({super.key});
 
@@ -87,6 +88,7 @@ class BookSwipeApp extends ConsumerWidget {
   }
 }
 
+/// Scaffold shell providing the bottom navigation bar for tabbed screens.
 class AppShell extends StatelessWidget {
   final Widget child;
 

@@ -6,6 +6,7 @@ import '../providers/providers.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_indicator.dart';
 
+/// Full-screen detail view for a single book with cover art, metadata, and like toggle.
 class BookDetailScreen extends ConsumerWidget {
   final String bookId;
 

@@ -1,3 +1,5 @@
+"""FastAPI application entry point with middleware, rate limiting, and startup logic."""
+
 import logging
 import time
 import uuid
@@ -30,6 +32,11 @@ _SENSITIVE_FIELDS = {"password", "secret_key", "access_token", "refresh_token", 
 
 
 def seed_categories(db: Session) -> None:
+    """Populate the categories table with defaults if empty.
+
+    Args:
+        db: Database session to use for seeding.
+    """
     existing = db.query(Category).count()
     if existing > 0:
         return
@@ -114,6 +121,7 @@ app.include_router(categories.router)
 
 @app.get("/health")
 def health_check():
+    """Return application health status, version, and environment."""
     return {
         "status": "ok",
         "version": settings.app_version,

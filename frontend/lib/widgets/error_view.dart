@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// A centered error display with an icon, message, and optional retry button.
 class ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;

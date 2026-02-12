@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../utils/validators.dart';
 
+/// Email/password login form that authenticates via [AuthStateNotifier].
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 

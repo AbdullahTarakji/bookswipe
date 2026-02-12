@@ -8,6 +8,7 @@ import '../widgets/book_card.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_indicator.dart';
 
+/// Main discovery screen with swipeable book cards and category filtering.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -137,8 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(likedBooksProvider.notifier).likeBook(book);
       _showSwipeFeedback(true);
     } else if (direction == CardSwiperDirection.left) {
-      final api = ref.read(apiServiceProvider);
-      api.skipBook(book.id);
+      ref.read(discoverBooksProvider.notifier).skipBook(book.id);
       _showSwipeFeedback(false);
     }
   }

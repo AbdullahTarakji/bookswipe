@@ -6,6 +6,7 @@ import '../widgets/book_list_tile.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_indicator.dart';
 
+/// Displays the user's liked books with pull-to-refresh and swipe-to-unlike.
 class LikedBooksScreen extends ConsumerWidget {
   const LikedBooksScreen({super.key});
 

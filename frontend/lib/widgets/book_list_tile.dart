@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 
+/// A compact list tile for a book, with optional swipe-to-dismiss for unliking.
 class BookListTile extends StatelessWidget {
   final Book book;
   final VoidCallback? onTap;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../widgets/loading_indicator.dart';
 
+/// Grid screen that lets users pick a book category to filter discovery results.
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 

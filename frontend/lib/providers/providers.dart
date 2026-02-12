@@ -1,3 +1,7 @@
+/// Riverpod providers for BookSwipe state management.
+///
+/// All API calls flow through providers — screens never call services directly.
+/// Providers are the single source of truth for application state.
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,20 +13,26 @@ import '../services/auth_service.dart';
 
 // --- Core Services ---
 
+/// Provides the singleton [ApiService] for HTTP communication.
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+/// Provides the singleton [AuthService] for secure token storage.
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 // --- Auth State ---
 
+/// Manages authentication state including login, registration, and logout.
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
   return AuthNotifier(ref.read(apiServiceProvider), ref.read(authServiceProvider));
 });
 
+/// Notifier that manages user authentication state and token lifecycle.
 class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   final ApiService _api;
   final AuthService _auth;
 
+  /// Creates an [AuthNotifier] and initializes auth state from secure storage.
   AuthNotifier(this._api, this._auth) : super(const AsyncValue.loading()) {
     _setupTokenRefresh();
     _init();
@@ -73,6 +83,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Authenticate with email and password, storing tokens on success.
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     try {
@@ -105,6 +116,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Register a new account with email and password, storing tokens on success.
   Future<void> register(String email, String password) async {
     state = const AsyncValue.loading();
     try {
@@ -137,6 +149,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Clear authentication tokens and sign the user out.
   Future<void> logout() async {
     _api.clearAuthToken();
     await _auth.clearUser();
@@ -146,10 +159,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
 // --- Selected Category ---
 
+/// Tracks the currently selected category filter key, or null for all.
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
 // --- Categories from API ---
 
+/// Fetches categories from the API, falling back to hardcoded defaults.
 final categoriesProvider = FutureProvider<List<BookCategory>>((ref) async {
   final api = ref.read(apiServiceProvider);
   try {
@@ -184,10 +199,12 @@ final categoriesProvider = FutureProvider<List<BookCategory>>((ref) async {
 
 // --- Books Discovery ---
 
+/// Manages the list of books available for swiping/discovery.
 final discoverBooksProvider =
     AsyncNotifierProvider<DiscoverBooksNotifier, List<Book>>(
         DiscoverBooksNotifier.new);
 
+/// Notifier for book discovery with pagination, skipping, and refresh support.
 class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
   int _page = 1;
 
@@ -203,6 +220,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     return api.discoverBooks(category: category, page: _page);
   }
 
+  /// Load the next page of books and append to the current list.
   Future<void> loadMore() async {
     final category = ref.read(selectedCategoryProvider);
     _page++;
@@ -225,6 +243,7 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Reset pagination and reload books from the first page.
   Future<void> refresh() async {
     _page = 1;
     state = const AsyncValue.loading();
@@ -239,6 +258,17 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Skip a book via the API and remove it from the local list.
+  Future<void> skipBook(String bookId) async {
+    final api = ref.read(apiServiceProvider);
+    try {
+      await api.skipBook(bookId);
+    } catch (_) {
+      // Skip failures are non-critical; the book is already removed from view
+    }
+  }
+
+  /// Remove a book from the local list without an API call.
   void removeBook(String bookId) {
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data(current.where((b) => b.id != bookId).toList());
@@ -247,10 +277,12 @@ class DiscoverBooksNotifier extends AsyncNotifier<List<Book>> {
 
 // --- Liked Books ---
 
+/// Manages the user's liked books list with like/unlike/refresh support.
 final likedBooksProvider =
     AsyncNotifierProvider<LikedBooksNotifier, List<Book>>(
         LikedBooksNotifier.new);
 
+/// Notifier for the user's liked books, synced with the backend.
 class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
   @override
   Future<List<Book>> build() async {
@@ -264,6 +296,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Like a book and add it to the local list optimistically.
   Future<void> likeBook(Book book) async {
     final api = ref.read(apiServiceProvider);
     try {
@@ -279,6 +312,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Unlike a book and remove it from the local list.
   Future<void> unlikeBook(String bookId) async {
     final api = ref.read(apiServiceProvider);
     try {
@@ -292,6 +326,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
     }
   }
 
+  /// Refresh the liked books list from the server.
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     ref.invalidateSelf();
@@ -300,6 +335,7 @@ class LikedBooksNotifier extends AsyncNotifier<List<Book>> {
 
 // --- Book Detail ---
 
+/// Fetches detailed information for a single book by its ID.
 final bookDetailProvider =
     FutureProvider.family<Book, String>((ref, bookId) async {
   final api = ref.read(apiServiceProvider);

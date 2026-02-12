@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 
+/// User profile screen showing account info, navigation links, and logout.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 

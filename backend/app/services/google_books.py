@@ -1,3 +1,5 @@
+"""Google Books API integration with caching and per-user rate limiting."""
+
 import time
 from typing import Any
 
@@ -78,6 +80,21 @@ async def search_books(
     exclude_ids: set[str] | None = None,
     user_id: int | None = None,
 ) -> tuple[list[BookSummary], int]:
+    """Search for books by category via the Google Books API.
+
+    Args:
+        category: The subject category to search for.
+        page: Page number (1-indexed) for pagination.
+        page_size: Number of results per page.
+        exclude_ids: Optional set of Google Book IDs to filter out.
+        user_id: Optional user ID for per-user rate limiting.
+
+    Returns:
+        A tuple of (list of book summaries, total result count).
+
+    Raises:
+        HTTPException: 429 if user rate limit exceeded, 502 if API error.
+    """
     _check_rate_limit(user_id)
 
     start_index = (page - 1) * page_size
@@ -122,6 +139,18 @@ async def search_books(
 
 
 async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail:
+    """Fetch detailed book information by Google Books volume ID.
+
+    Args:
+        book_id: The Google Books API volume ID.
+        user_id: Optional user ID for per-user rate limiting.
+
+    Returns:
+        Detailed book information.
+
+    Raises:
+        HTTPException: 404 if not found, 429 if rate limited, 502 if API error.
+    """
     _check_rate_limit(user_id)
 
     cache_key = f"book:{book_id}"
@@ -158,5 +187,6 @@ async def get_book_by_id(book_id: str, user_id: int | None = None) -> BookDetail
 
 
 def clear_cache() -> None:
+    """Clear the book search cache and per-user rate limit tracking."""
     _cache.clear()
     _rate_limits.clear()

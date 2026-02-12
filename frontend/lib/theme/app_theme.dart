@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Defines Material 3 light and dark themes for the BookSwipe app.
 class AppTheme {
   static const _primaryColor = Color(0xFFFF6B6B);
   static const _darkBg = Color(0xFF121212);

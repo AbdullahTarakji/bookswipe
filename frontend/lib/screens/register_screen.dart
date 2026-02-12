@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../utils/validators.dart';
 
+/// Account registration form with email, password, and confirmation fields.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 

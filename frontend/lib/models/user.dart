@@ -1,3 +1,4 @@
+/// Represents an authenticated user with their access and refresh tokens.
 class User {
   final String id;
   final String email;
@@ -11,6 +12,7 @@ class User {
     this.refreshToken = '',
   });
 
+  /// Creates a [User] from a JSON map (supports both API and storage formats).
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: (json['id'] ?? '').toString(),
@@ -20,6 +22,7 @@ class User {
     );
   }
 
+  /// Creates a copy of this user with updated authentication tokens.
   User copyWithTokens({required String token, required String refreshToken}) {
     return User(
       id: id,
@@ -29,6 +32,7 @@ class User {
     );
   }
 
+  /// Serializes this user to a JSON map for secure storage.
   Map<String, dynamic> toJson() => {
         'id': id,
         'email': email,
