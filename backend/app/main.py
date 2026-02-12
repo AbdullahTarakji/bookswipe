@@ -1,6 +1,7 @@
 """BookSwipe API application entry point.
 
 Configures the FastAPI app with middleware, exception handlers, and route registration.
+Integrates Prometheus metrics, structured JSON logging, and Sentry error tracking.
 """
 
 import logging
@@ -21,16 +22,19 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import Base, engine, SessionLocal, check_db_health
 from app.exceptions import BookSwipeException
+from app.logging_config import setup_logging
+from app.metrics import create_instrumentator
 from app.models import Category, SEED_CATEGORIES
 from app.routers import auth, books, categories
 from app.services.cache import close_redis, redis_ping
+from app.sentry_setup import init_sentry
 
-# Structured logging
-logging.basicConfig(
-    level=logging.DEBUG if settings.debug else logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
+# Structured JSON logging
+setup_logging()
 logger = logging.getLogger("bookswipe")
+
+# Track process start time for uptime calculation
+_start_time = time.time()
 
 
 def seed_categories(db: Session) -> None:
@@ -46,6 +50,9 @@ def seed_categories(db: Session) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown tasks."""
+    # Initialize Sentry before anything else
+    init_sentry()
+
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -86,6 +93,12 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+# Prometheus instrumentation
+if settings.prometheus_enabled:
+    instrumentator = create_instrumentator()
+    instrumentator.instrument(app)
+    instrumentator.expose(app, include_in_schema=False)
+
 
 @app.exception_handler(BookSwipeException)
 async def bookswipe_exception_handler(request: Request, exc: BookSwipeException) -> JSONResponse:
@@ -97,6 +110,14 @@ async def bookswipe_exception_handler(request: Request, exc: BookSwipeException)
         exc.message,
         request_id,
     )
+
+    # Add context to Sentry if available
+    try:
+        import sentry_sdk
+        sentry_sdk.set_context("request", {"request_id": request_id})
+    except Exception:
+        pass
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -130,6 +151,14 @@ async def request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     request.state.request_id = request_id
     start_time = time.time()
+
+    # Set Sentry context
+    try:
+        import sentry_sdk
+        sentry_sdk.set_tag("request_id", request_id)
+    except Exception:
+        pass
+
     response = await call_next(request)
     duration_ms = (time.time() - start_time) * 1000
     response.headers["X-Request-ID"] = request_id
@@ -140,6 +169,12 @@ async def request_id_middleware(request: Request, call_next):
         response.status_code,
         duration_ms,
         request_id,
+        extra={
+            "request_id": request_id,
+            "endpoint": request.url.path,
+            "duration_ms": round(duration_ms, 1),
+            "status_code": response.status_code,
+        },
     )
     return response
 
@@ -151,14 +186,20 @@ app.include_router(categories.router)
 
 @app.get("/health")
 async def health_check():
-    """Return application health status including database and Redis connectivity."""
+    """Return application health status with dependency checks."""
+    uptime = round(time.time() - _start_time, 2)
     db_health = check_db_health()
     redis_ok = await redis_ping()
-    overall_status = "ok" if db_health["status"] == "ok" else "degraded"
+
+    db_status = db_health.get("status", "error") if isinstance(db_health, dict) else "ok"
+    overall = "healthy" if db_status == "ok" else "unhealthy"
+
     return {
-        "status": overall_status,
+        "status": overall,
         "version": settings.app_version,
-        "environment": settings.environment,
-        "database": db_health,
-        "redis": "connected" if redis_ok else "unavailable",
+        "uptime": uptime,
+        "dependencies": {
+            "database": db_status,
+            "redis": "connected" if redis_ok else "unavailable",
+        },
     }

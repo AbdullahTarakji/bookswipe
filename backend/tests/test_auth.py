@@ -155,8 +155,11 @@ def test_health_check_version(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "ok"
+    assert data["status"] == "healthy"
     assert "version" in data
+    assert "uptime" in data
+    assert data["dependencies"]["database"] == "ok"
+    assert data["dependencies"]["redis"] == "not_configured"
 
 
 def test_security_headers(client):

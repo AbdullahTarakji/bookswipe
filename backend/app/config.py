@@ -58,6 +58,14 @@ class Settings(BaseSettings):
     # Password policy
     password_min_length: int = 8
 
+    # Monitoring & Observability
+    sentry_dsn: str = ""
+    prometheus_enabled: bool = True
+    log_level: str = "INFO"
+
+    # Redis (optional, for arq workers and caching)
+    redis_url: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @property

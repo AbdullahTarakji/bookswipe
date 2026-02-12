@@ -219,6 +219,8 @@ def test_health_check(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "ok"
+    assert data["status"] == "healthy"
     assert "version" in data
-    assert "environment" in data
+    assert "uptime" in data
+    assert "dependencies" in data
+    assert data["dependencies"]["database"] == "ok"

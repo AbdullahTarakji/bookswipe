@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bookswipe-api
+  labels:
+    app: bookswipe-api
+spec:
+  type: ClusterIP
+  selector:
+    app: bookswipe-api
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http

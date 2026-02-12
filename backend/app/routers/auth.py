@@ -32,6 +32,7 @@ from app.services.auth import (
     oauth2_scheme,
     verify_password,
 )
+from app.metrics import auth_attempts_total
 from app.services.oauth import verify_apple_token, verify_google_token
 
 logger = logging.getLogger("bookswipe")
@@ -70,6 +71,7 @@ def register(request: Request, body: UserRegister, db: Session = Depends(get_db)
         raise ValidationError("Email already registered")
     user = repo.create(email=body.email, hashed_password=hash_password(body.password))
     strength = check_password_strength(body.password)
+    auth_attempts_total.labels(method="register", status="success").inc()
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
@@ -84,7 +86,9 @@ def login(request: Request, body: UserLogin, db: Session = Depends(get_db)):
     repo = UserRepository(db)
     user = repo.get_by_email(body.email)
     if not user or not verify_password(body.password, user.hashed_password):
+        auth_attempts_total.labels(method="login", status="failure").inc()
         raise AuthError("Invalid email or password")
+    auth_attempts_total.labels(method="login", status="success").inc()
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
@@ -98,6 +102,7 @@ def google_auth(request: Request, body: GoogleAuthRequest, db: Session = Depends
     try:
         google_user = verify_google_token(body.id_token)
     except ValueError as e:
+        auth_attempts_total.labels(method="google", status="failure").inc()
         raise AuthError(str(e))
     repo = UserRepository(db)
     user = _get_or_create_oauth_user(
@@ -106,6 +111,7 @@ def google_auth(request: Request, body: GoogleAuthRequest, db: Session = Depends
         provider="google",
         provider_id=google_user["sub"],
     )
+    auth_attempts_total.labels(method="google", status="success").inc()
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
@@ -119,6 +125,7 @@ def apple_auth(request: Request, body: AppleAuthRequest, db: Session = Depends(g
     try:
         apple_user = verify_apple_token(body.identity_token)
     except ValueError as e:
+        auth_attempts_total.labels(method="apple", status="failure").inc()
         raise AuthError(str(e))
     repo = UserRepository(db)
     user = _get_or_create_oauth_user(
@@ -127,6 +134,7 @@ def apple_auth(request: Request, body: AppleAuthRequest, db: Session = Depends(g
         provider="apple",
         provider_id=apple_user["sub"],
     )
+    auth_attempts_total.labels(method="apple", status="success").inc()
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
