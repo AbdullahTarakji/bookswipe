@@ -235,3 +235,27 @@ async def health_check():
             "redis": "connected" if redis_ok else "unavailable",
         },
     }
+
+
+# Serve Flutter web frontend with SPA fallback (must be after all API routes)
+import os as _os
+import pathlib as _pathlib
+_flutter_web = _pathlib.Path(
+    _os.environ.get("FLUTTER_WEB_DIR", str(_pathlib.Path(__file__).resolve().parent.parent.parent / "frontend" / "build" / "web"))
+)
+if _flutter_web.exists():
+    from starlette.staticfiles import StaticFiles
+    from starlette.responses import FileResponse
+
+    _flutter_static = StaticFiles(directory=str(_flutter_web))
+    _index_html = str(_flutter_web / "index.html")
+
+    @app.middleware("http")
+    async def flutter_spa_fallback(request, call_next):
+        response = await call_next(request)
+        # If it's a 404 and not an API/health route, serve index.html (SPA fallback)
+        if response.status_code == 404 and not request.url.path.startswith(("/api/", "/health")):
+            return FileResponse(_index_html)
+        return response
+
+    app.mount("/", _flutter_static, name="flutter")

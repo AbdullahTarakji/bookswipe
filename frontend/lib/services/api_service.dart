@@ -17,13 +17,18 @@ class ApiService {
   /// Base delay for exponential backoff (doubles with each retry).
   static const Duration baseRetryDelay = Duration(milliseconds: 500);
 
-  /// Derive the API base URL from the current page origin (same host, port 8000).
+  /// Derive the API base URL from the current page origin.
   static String get _defaultBaseUrl {
     const env = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (env.isNotEmpty) return env;
-    // On web, use the same host but port 8000
-    final uri = Uri.base;
-    return '${uri.scheme}://${uri.host}:8000';
+    // Use window origin for same-origin requests
+    try {
+      final uri = Uri.base;
+      if (uri.host.isNotEmpty) {
+        return uri.origin;
+      }
+    } catch (_) {}
+    return 'http://localhost:8080';
   }
 
   /// Creates an [ApiService] with an optional [baseUrl] or pre-configured [dio] instance.

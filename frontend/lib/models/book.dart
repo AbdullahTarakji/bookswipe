@@ -35,13 +35,9 @@ class Book {
   String get highResThumbnail {
     if (thumbnailUrl == null || thumbnailUrl!.isEmpty) return '';
     final url = thumbnailUrl!;
-    // Proxy URLs are relative — prepend API base
+    // Proxy URLs are relative — use as-is (same origin)
     if (url.startsWith('/api/')) {
-      const env = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-      if (env.isNotEmpty) return '$env$url';
-      // Dev fallback: same host, port 8000
-      final uri = Uri.base;
-      return '${uri.scheme}://${uri.host}:8000$url';
+      return url;
     }
     return url;
   }
