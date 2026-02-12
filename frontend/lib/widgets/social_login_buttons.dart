@@ -27,7 +27,7 @@ class SocialLoginButtons extends ConsumerWidget {
               'assets/google_logo.png',
               height: 20,
               width: 20,
-              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 24),
+              errorBuilder: (_, __, _) => const Icon(Icons.g_mobiledata, size: 24),
             ),
             label: const Text('Sign in with Google'),
             style: OutlinedButton.styleFrom(
@@ -80,7 +80,7 @@ class SocialLoginButtons extends ConsumerWidget {
       final auth = await account.authentication;
       final idToken = auth.idToken;
       if (idToken == null) {
-        _showError(context, 'Failed to get Google ID token');
+        if (context.mounted) _showError(context, 'Failed to get Google ID token');
         return;
       }
 
@@ -104,7 +104,7 @@ class SocialLoginButtons extends ConsumerWidget {
       final authCode = credential.authorizationCode;
       final identityToken = credential.identityToken;
       if (identityToken == null) {
-        _showError(context, 'Failed to get Apple identity token');
+        if (context.mounted) _showError(context, 'Failed to get Apple identity token');
         return;
       }
 

@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from tests.conftest import VALID_TEST_PASSWORD
 
 
 # --- Google OAuth Tests ---

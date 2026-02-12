@@ -1,7 +1,7 @@
-/// Input validation functions for BookSwipe forms.
-///
-/// These validators mirror the backend validation rules to provide
-/// immediate client-side feedback before requests are sent.
+// Input validation functions for BookSwipe forms.
+//
+// These validators mirror the backend validation rules to provide
+// immediate client-side feedback before requests are sent.
 
 /// Validates that the given [value] is a properly formatted email address.
 ///
