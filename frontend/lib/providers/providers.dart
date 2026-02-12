@@ -137,6 +137,59 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  Future<void> signInWithGoogle(String idToken) async {
+    state = const AsyncValue.loading();
+    try {
+      final tokenData = await _api.googleSignIn(idToken);
+      await _handleOAuthTokenResponse(tokenData);
+    } on DioException catch (e) {
+      state = AsyncValue.error(ApiService.formatError(e), StackTrace.current);
+    } catch (e, st) {
+      state = AsyncValue.error('Google sign-in failed. Please try again.', st);
+    }
+  }
+
+  Future<void> signInWithApple({
+    required String authorizationCode,
+    required String identityToken,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final tokenData = await _api.appleSignIn(
+        authorizationCode: authorizationCode,
+        identityToken: identityToken,
+      );
+      await _handleOAuthTokenResponse(tokenData);
+    } on DioException catch (e) {
+      state = AsyncValue.error(ApiService.formatError(e), StackTrace.current);
+    } catch (e, st) {
+      state = AsyncValue.error('Apple sign-in failed. Please try again.', st);
+    }
+  }
+
+  Future<void> _handleOAuthTokenResponse(Map<String, dynamic> tokenData) async {
+    final accessToken = tokenData['access_token'] as String;
+    final refreshToken = tokenData['refresh_token'] as String? ?? '';
+
+    _api.setAuthToken(accessToken);
+    _api.setRefreshToken(refreshToken);
+
+    Map<String, dynamic>? profile;
+    try {
+      profile = await _api.getProfile();
+    } catch (_) {}
+
+    final user = User(
+      id: (profile?['id'] ?? '').toString(),
+      email: profile?['email'] as String? ?? '',
+      token: accessToken,
+      refreshToken: refreshToken,
+    );
+
+    await _auth.storeUser(user);
+    state = AsyncValue.data(user);
+  }
+
   Future<void> logout() async {
     _api.clearAuthToken();
     await _auth.clearUser();

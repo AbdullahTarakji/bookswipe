@@ -184,5 +184,14 @@ class PaginatedLikedBooks(BaseModel):
     page_size: int
 
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+
+class AppleAuthRequest(BaseModel):
+    authorization_code: str
+    identity_token: str
+
+
 class MessageResponse(BaseModel):
     message: str
