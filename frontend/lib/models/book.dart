@@ -67,36 +67,43 @@ class Book {
   }
 
   factory Book.fromJson(Map<String, dynamic> json) {
-    final volumeInfo = json['volume_info'] as Map<String, dynamic>?;
-    if (volumeInfo != null) {
-      return Book._fromBackendJson(json, volumeInfo);
+    // Google Books API format (has volumeInfo)
+    if (json.containsKey('volumeInfo')) {
+      return Book._fromGoogleJson(json);
     }
-    return Book._fromGoogleJson(json);
+    // Backend flat format (has google_book_id or flat title field)
+    return Book._fromBackendJson(json);
   }
 
-  factory Book._fromBackendJson(
-    Map<String, dynamic> json,
-    Map<String, dynamic> volumeInfo,
-  ) {
+  factory Book._fromBackendJson(Map<String, dynamic> json) {
+    // Parse authors: backend discover returns List<String>,
+    // but liked books endpoint returns a comma-joined String
+    List<String> authors;
+    final rawAuthors = json['authors'];
+    if (rawAuthors is List) {
+      authors = rawAuthors.map((a) => a as String).toList();
+    } else if (rawAuthors is String) {
+      authors = rawAuthors.split(',').map((a) => a.trim()).where((a) => a.isNotEmpty).toList();
+    } else {
+      authors = ['Unknown Author'];
+    }
+
     return Book(
-      id: json['id'] as String? ?? json['google_book_id'] as String,
-      title: volumeInfo['title'] as String? ?? 'Unknown Title',
-      authors: (volumeInfo['authors'] as List<dynamic>?)
-              ?.map((a) => a as String)
-              .toList() ??
-          ['Unknown Author'],
-      description: volumeInfo['description'] as String?,
-      thumbnailUrl: volumeInfo['thumbnail_url'] as String?,
-      pageCount: volumeInfo['page_count'] as int?,
-      averageRating: (volumeInfo['average_rating'] as num?)?.toDouble(),
-      ratingsCount: volumeInfo['ratings_count'] as int?,
-      categories: (volumeInfo['categories'] as List<dynamic>?)
+      id: json['google_book_id'] as String? ?? json['id'].toString(),
+      title: json['title'] as String? ?? 'Unknown Title',
+      authors: authors,
+      description: json['description'] as String?,
+      thumbnailUrl: json['thumbnail'] as String?,
+      pageCount: json['page_count'] as int?,
+      averageRating: (json['average_rating'] as num?)?.toDouble(),
+      ratingsCount: json['ratings_count'] as int?,
+      categories: (json['categories'] as List<dynamic>?)
               ?.map((c) => c as String)
               .toList() ??
           [],
-      publishedDate: volumeInfo['published_date'] as String?,
-      publisher: volumeInfo['publisher'] as String?,
-      previewLink: volumeInfo['preview_link'] as String?,
+      publishedDate: json['published_date'] as String?,
+      publisher: json['publisher'] as String?,
+      previewLink: json['preview_link'] as String?,
       isLiked: json['is_liked'] as bool? ?? false,
     );
   }
