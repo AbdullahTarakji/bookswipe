@@ -1,68 +1,29 @@
 # BookSwipe Backlog (Prioritized)
 
-## P0 — In Progress
-- [x] Core backend (FastAPI + auth + books + categories) ✅
-- [x] Core frontend (Flutter + all screens) ✅
-- [x] Frontend ↔ Backend integration ✅
-- [x] CI/CD pipelines ✅
-- [ ] Security hardening (rate limiting, headers, JWT, passwords) — BUILDING NOW
+## P0 — Core ✅ COMPLETE
+- [x] Core backend (FastAPI + auth + books + categories)
+- [x] Core frontend (Flutter + all screens)
+- [x] Frontend ↔ Backend integration
+- [x] CI/CD pipelines (GitHub Actions)
 
-## P1 — Critical (Next Sprint)
-- [ ] Clean Architecture refactor
-  - Backend: routers → services → repositories → models (repository pattern, DI)
-  - Frontend: clean separation, no API calls in widgets
-- [ ] Encryption at rest (emails, tokens — Fernet + hashed lookups)
-- [ ] OAuth Social Login (Google + Apple + email/password)
-- [ ] Comprehensive error handling
-  - Backend: global exception handler, custom error classes, structured error responses
-  - Frontend: graceful error states, retry logic, offline handling, user-friendly messages
-  - API error codes: standardized error schema across all endpoints
-- [ ] Documentation
-  - OpenAPI/Swagger (auto from FastAPI)
-  - Architecture Decision Records (docs/decisions/)
-  - README with setup, architecture, tech stack
-  - Docstrings on all public functions
-  - CONTRIBUTING.md + API usage examples
+## P1 — Security & Architecture ✅ COMPLETE
+- [x] Security hardening (rate limiting, headers, JWT, passwords)
+- [x] OAuth Social Login (Google + Apple + email/password)
+- [x] Clean Architecture refactor (repository pattern, DI, docstrings)
+- [x] Error handling + Documentation
 
-## P2 — Scale for 300K Users
-- [ ] Load balancer ready
-  - Stateless backend (already done ✅)
-  - Redis for session/cache (replace in-memory TTL cache)
-  - Redis for rate limiting (distributed)
-  - Database connection pooling (async SQLAlchemy)
-  - Horizontal scaling config (Kubernetes manifests or docker-compose scale)
-- [ ] PostgreSQL migration (SQLite → PostgreSQL)
-- [ ] Database optimization
-  - Indexes on all query columns
-  - Query optimization + N+1 prevention
-  - Read replicas config
-  - Connection pooling (pgbouncer)
-- [ ] CDN for book cover images (cache proxy)
-- [ ] API response caching (Redis)
-- [ ] Background job queue (Celery/ARQ) for heavy operations
-- [ ] Monitoring & observability
-  - Prometheus metrics
-  - Grafana dashboards
-  - Sentry error tracking
-  - Structured JSON logging
-  - Health check endpoints with dependency status
+## P2 — Scale for 300K Users ✅ COMPLETE
+- [x] PostgreSQL migration + connection pooling + indexes + GDPR soft delete — PR #30
+- [x] Monitoring (Prometheus, structured logging, Sentry, K8s, HPA) — PR #31
+- [x] Redis caching (distributed cache, rate limiting, token blacklist) — PR #32
 
-## P3 — Product Features
-- [ ] Admin Panel
-  - User management (view, ban/suspend, delete)
-  - Analytics dashboard (active users, swipes/day, popular categories)
-  - Content moderation
-  - System monitoring
-  - Role-based access (admin vs user)
+## P3 — Product Features (NEXT)
+- [ ] Admin Panel (user mgmt, analytics, moderation, role-based access)
 - [ ] Stripe subscription/payments
 - [ ] UI polish & animations
 - [ ] Staging + production deployment
-- [ ] Biometric auth (fingerprint/face ID)
-
-## Standards (enforced on ALL work)
-- Clean Architecture: strict layer separation
-- Every public function has docstrings
-- Every feature has tests
-- No secrets in code
-- Structured error responses everywhere
-- Design for 300K concurrent users from the start
+- [ ] Push notifications
+- [ ] Book recommendations (ML-based)
+- [ ] Social features (share books, friend lists)
+- [ ] CDN for book cover images
+- [ ] Load testing (k6/locust)
