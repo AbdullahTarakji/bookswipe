@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'main.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_system_screen.dart';
 import 'screens/admin_users_screen.dart';
@@ -128,7 +129,7 @@ class AppShell extends ConsumerWidget {
     final destinations = _buildDestinations(isAdmin);
 
     return Scaffold(
-      body: child,
+      body: ErrorBoundary(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) {

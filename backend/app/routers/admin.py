@@ -2,7 +2,9 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -29,6 +31,7 @@ from app.services.admin import (
 from app.services.auth import get_current_user
 
 logger = logging.getLogger("bookswipe")
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -41,7 +44,9 @@ def get_admin_user(
 
 
 @router.get("/users", response_model=PaginatedAdminUsers)
+@limiter.limit("30/minute")
 def list_users(
+    request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: str | None = Query(None, max_length=255),
@@ -61,7 +66,9 @@ def list_users(
 
 
 @router.get("/users/{user_id}", response_model=AdminUserResponse)
+@limiter.limit("30/minute")
 def get_user(
+    request: Request,
     user_id: int,
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
@@ -72,7 +79,9 @@ def get_user(
 
 
 @router.put("/users/{user_id}/role", response_model=AdminUserResponse)
+@limiter.limit("10/minute")
 def change_user_role(
+    request: Request,
     user_id: int,
     body: UpdateRoleRequest,
     admin: User = Depends(get_admin_user),
@@ -84,7 +93,9 @@ def change_user_role(
 
 
 @router.put("/users/{user_id}/ban", response_model=AdminUserResponse)
+@limiter.limit("10/minute")
 def toggle_ban_user(
+    request: Request,
     user_id: int,
     body: BanUserRequest = BanUserRequest(),
     admin: User = Depends(get_admin_user),
@@ -96,7 +107,9 @@ def toggle_ban_user(
 
 
 @router.delete("/users/{user_id}", response_model=MessageResponse)
+@limiter.limit("5/minute")
 def remove_user(
+    request: Request,
     user_id: int,
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
@@ -107,7 +120,9 @@ def remove_user(
 
 
 @router.get("/analytics", response_model=AnalyticsResponse)
+@limiter.limit("10/minute")
 def analytics(
+    request: Request,
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
@@ -117,7 +132,9 @@ def analytics(
 
 
 @router.get("/system", response_model=SystemInfoResponse)
+@limiter.limit("10/minute")
 def system_info(
+    request: Request,
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):

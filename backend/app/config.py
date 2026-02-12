@@ -1,5 +1,8 @@
 """Application settings loaded from environment variables and .env file."""
 
+import logging
+import warnings
+
 from pydantic_settings import BaseSettings
 
 
@@ -84,6 +87,11 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Warn if using default secret key in production
-if settings.secret_key == "change-me-in-production-use-a-real-secret-key" and settings.is_production:
-    raise RuntimeError("SECRET_KEY must be changed for production!")
+# ── Production safety checks ─────────────────────────────────
+if settings.is_production:
+    if settings.secret_key == "change-me-in-production-use-a-real-secret-key":
+        raise RuntimeError("SECRET_KEY must be changed for production!")
+    if len(settings.secret_key) < 32:
+        raise RuntimeError("SECRET_KEY must be at least 32 characters for production!")
+    if "*" in settings.cors_origins:
+        raise RuntimeError("CORS_ORIGINS must not contain '*' in production!")

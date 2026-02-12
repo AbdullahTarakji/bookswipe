@@ -1,7 +1,12 @@
 __pycache__/
 *.py[cod]
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 .env
+.env.*
+!.env.example
 .venv/
 .pytest_cache/
 htmlcov/
@@ -9,3 +14,4 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+alembic/versions/__pycache__/
