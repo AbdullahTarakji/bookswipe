@@ -144,6 +144,48 @@ def auth_headers(registered_user):
     return {"Authorization": f"Bearer {registered_user['access_token']}"}
 
 
+@pytest.fixture()
+def admin_user(db_session):
+    """Create an admin user and return the User object."""
+    from app.services.auth import hash_password
+    from app.models import User
+
+    user = User(
+        email="admin@test.com",
+        hashed_password=hash_password(VALID_TEST_PASSWORD),
+        role="admin",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture()
+def admin_headers(admin_user):
+    """Return auth headers for the admin user."""
+    from app.services.auth import create_access_token
+    token = create_access_token(admin_user.id)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
+def regular_user(db_session):
+    """Create a regular user and return the User object."""
+    from app.services.auth import hash_password
+    from app.models import User
+
+    user = User(
+        email="regular@test.com",
+        hashed_password=hash_password(VALID_TEST_PASSWORD),
+        role="user",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
 MOCK_GOOGLE_BOOKS_SEARCH_RESPONSE = {
     "totalItems": 2,
     "items": [

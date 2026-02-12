@@ -64,6 +64,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             email: profile['email'] as String? ?? user.email,
             token: user.token,
             refreshToken: user.refreshToken,
+            role: profile['role'] as String? ?? user.role,
           );
           await _auth.storeUser(updatedUser);
           state = AsyncValue.data(updatedUser);
@@ -101,6 +102,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: profile?['email'] as String? ?? email,
         token: accessToken,
         refreshToken: refreshToken,
+        role: profile?['role'] as String? ?? 'user',
       );
 
       await _auth.storeUser(user);
@@ -134,6 +136,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: profile?['email'] as String? ?? email,
         token: accessToken,
         refreshToken: refreshToken,
+        role: profile?['role'] as String? ?? 'user',
       );
 
       await _auth.storeUser(user);
@@ -194,6 +197,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       email: profile?['email'] as String? ?? '',
       token: accessToken,
       refreshToken: refreshToken,
+      role: profile?['role'] as String? ?? 'user',
     );
 
     await _auth.storeUser(user);
@@ -386,3 +390,60 @@ final bookDetailProvider =
     throw ApiService.formatError(e);
   }
 });
+
+// --- Admin ---
+
+/// Fetches admin analytics data.
+final adminAnalyticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final api = ref.read(apiServiceProvider);
+  return api.getAnalytics();
+});
+
+/// Fetches system info for admin panel.
+final adminSystemInfoProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final api = ref.read(apiServiceProvider);
+  return api.getSystemInfo();
+});
+
+/// Manages the admin user list with pagination, search, and filtering.
+final adminUsersProvider =
+    AsyncNotifierProvider<AdminUsersNotifier, Map<String, dynamic>>(
+        AdminUsersNotifier.new);
+
+class AdminUsersNotifier extends AsyncNotifier<Map<String, dynamic>> {
+  int _page = 1;
+  String? _search;
+  String? _roleFilter;
+  bool? _bannedFilter;
+
+  @override
+  Future<Map<String, dynamic>> build() async {
+    final api = ref.read(apiServiceProvider);
+    return api.getAdminUsers(
+      page: _page,
+      search: _search,
+      role: _roleFilter,
+      isBanned: _bannedFilter,
+    );
+  }
+
+  Future<void> setFilters({String? search, String? role, bool? isBanned}) async {
+    _page = 1;
+    _search = search;
+    _roleFilter = role;
+    _bannedFilter = isBanned;
+    state = const AsyncValue.loading();
+    ref.invalidateSelf();
+  }
+
+  Future<void> setPage(int page) async {
+    _page = page;
+    state = const AsyncValue.loading();
+    ref.invalidateSelf();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    ref.invalidateSelf();
+  }
+}

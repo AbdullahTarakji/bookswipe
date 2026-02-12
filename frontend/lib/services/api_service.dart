@@ -228,6 +228,77 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  // --- Admin endpoints ---
+
+  /// Fetch paginated list of users for admin panel.
+  Future<Map<String, dynamic>> getAdminUsers({
+    int page = 1,
+    int pageSize = 20,
+    String? search,
+    String? role,
+    bool? isBanned,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'page_size': pageSize,
+    };
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (role != null) queryParams['role'] = role;
+    if (isBanned != null) queryParams['is_banned'] = isBanned;
+
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/admin/users', queryParameters: queryParams),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Fetch a single user's details for admin panel.
+  Future<Map<String, dynamic>> getAdminUser(int userId) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/admin/users/$userId'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Update a user's role.
+  Future<Map<String, dynamic>> updateUserRole(int userId, String role) async {
+    final response = await _dio.put(
+      '/api/admin/users/$userId/role',
+      data: {'role': role},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Ban or unban a user (toggle).
+  Future<Map<String, dynamic>> toggleBanUser(int userId, {String? reason}) async {
+    final response = await _dio.put(
+      '/api/admin/users/$userId/ban',
+      data: {'reason': reason},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Hard-delete a user.
+  Future<void> deleteUser(int userId) async {
+    await _dio.delete('/api/admin/users/$userId');
+  }
+
+  /// Fetch admin analytics.
+  Future<Map<String, dynamic>> getAnalytics() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/admin/analytics'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Fetch system info.
+  Future<Map<String, dynamic>> getSystemInfo() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/admin/system'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   /// Format a [DioException] into a user-friendly error message.
   static String formatError(DioException e) {
     if (e.response != null) {
