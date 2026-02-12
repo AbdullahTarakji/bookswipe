@@ -150,13 +150,11 @@ app.include_router(categories.router)
 
 
 @app.get("/health")
-def health_check():
-    """Return application health status including database connectivity."""
-    db_health = check_db_health()
-    overall_status = "ok" if db_health["status"] == "ok" else "degraded"
 async def health_check():
-    """Return application health status including Redis connectivity."""
+    """Return application health status including database and Redis connectivity."""
+    db_health = check_db_health()
     redis_ok = await redis_ping()
+    overall_status = "ok" if db_health["status"] == "ok" else "degraded"
     return {
         "status": overall_status,
         "version": settings.app_version,
