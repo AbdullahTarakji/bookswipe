@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from slowapi import Limiter
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
