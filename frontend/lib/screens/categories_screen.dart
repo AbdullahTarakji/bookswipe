@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/category.dart';
 import '../providers/providers.dart';
+import '../widgets/loading_indicator.dart';
 
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
@@ -9,13 +9,17 @@ class CategoriesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
       ),
-      body: GridView.builder(
+      body: categoriesAsync.when(
+        loading: () => const LoadingIndicator(message: 'Loading categories...'),
+        error: (error, _) => Center(child: Text('Failed to load categories: $error')),
+        data: (categories) => GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
@@ -23,9 +27,9 @@ class CategoriesScreen extends ConsumerWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: BookCategory.defaults.length,
+        itemCount: categories.length,
         itemBuilder: (context, index) {
-          final cat = BookCategory.defaults[index];
+          final cat = categories[index];
           final isSelected = selectedCategory == cat.key;
 
           return GestureDetector(
@@ -87,6 +91,7 @@ class CategoriesScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -3,7 +3,6 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/book.dart';
-import '../models/category.dart';
 import '../providers/providers.dart';
 import '../widgets/book_card.dart';
 import '../widgets/error_view.dart';
@@ -64,12 +63,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCategoryChips(String? selectedCategory) {
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final categories = categoriesAsync.valueOrNull ?? [];
+
     return SizedBox(
       height: 50,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: BookCategory.defaults.length + 1,
+        itemCount: categories.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
@@ -83,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             );
           }
-          final cat = BookCategory.defaults[index - 1];
+          final cat = categories[index - 1];
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(

@@ -39,24 +39,15 @@ void main() {
       expect(book.thumbnailUrl, 'https://books.google.com/thumb.jpg');
     });
 
-    test('fromJson parses backend format with volume_info', () {
+    test('fromJson parses flat backend format from discover endpoint', () {
       final json = {
-        'id': 'xyz789',
         'google_book_id': 'xyz789',
-        'volume_info': {
-          'title': 'Backend Book',
-          'authors': ['Jane Doe'],
-          'description': 'From backend.',
-          'thumbnail_url': 'https://example.com/cover.jpg',
-          'page_count': 200,
-          'average_rating': 3.8,
-          'ratings_count': 50,
-          'categories': ['Science'],
-          'published_date': '2022-06-15',
-          'publisher': 'Backend Press',
-          'preview_link': 'https://example.com/preview',
-        },
-        'is_liked': true,
+        'title': 'Backend Book',
+        'authors': ['Jane Doe'],
+        'thumbnail': 'https://example.com/cover.jpg',
+        'categories': ['Science'],
+        'average_rating': 3.8,
+        'ratings_count': 50,
       };
 
       final book = Book.fromJson(json);
@@ -64,9 +55,53 @@ void main() {
       expect(book.id, 'xyz789');
       expect(book.title, 'Backend Book');
       expect(book.authors, ['Jane Doe']);
-      expect(book.isLiked, true);
-      expect(book.pageCount, 200);
+      expect(book.thumbnailUrl, 'https://example.com/cover.jpg');
+      expect(book.categories, ['Science']);
       expect(book.averageRating, 3.8);
+      expect(book.ratingsCount, 50);
+    });
+
+    test('fromJson parses liked books with authors as string', () {
+      final json = {
+        'id': 1,
+        'google_book_id': 'abc123',
+        'title': 'Liked Book',
+        'authors': 'Author One, Author Two',
+        'thumbnail': 'https://example.com/thumb.jpg',
+        'liked_at': '2024-01-01T00:00:00',
+      };
+
+      final book = Book.fromJson(json);
+
+      expect(book.id, 'abc123');
+      expect(book.title, 'Liked Book');
+      expect(book.authors, ['Author One', 'Author Two']);
+      expect(book.thumbnailUrl, 'https://example.com/thumb.jpg');
+    });
+
+    test('fromJson parses backend book detail format', () {
+      final json = {
+        'google_book_id': 'detail123',
+        'title': 'Detailed Book',
+        'authors': ['Author A', 'Author B'],
+        'thumbnail': 'https://example.com/detail.jpg',
+        'description': 'A detailed description.',
+        'page_count': 350,
+        'average_rating': 4.2,
+        'ratings_count': 200,
+        'categories': ['Fiction', 'Adventure'],
+      };
+
+      final book = Book.fromJson(json);
+
+      expect(book.id, 'detail123');
+      expect(book.title, 'Detailed Book');
+      expect(book.authors, ['Author A', 'Author B']);
+      expect(book.description, 'A detailed description.');
+      expect(book.pageCount, 350);
+      expect(book.averageRating, 4.2);
+      expect(book.ratingsCount, 200);
+      expect(book.categories, ['Fiction', 'Adventure']);
     });
 
     test('fromJson handles missing fields gracefully', () {
