@@ -9,6 +9,7 @@ import 'package:bookswipe/providers/providers.dart';
 import 'package:bookswipe/screens/book_detail_screen.dart';
 import 'package:bookswipe/services/api_service.dart';
 import 'package:bookswipe/services/auth_service.dart';
+import 'package:bookswipe/widgets/shimmer_loading.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockApiService extends Mock implements ApiService {}
@@ -189,8 +190,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading book details...'), findsOneWidget);
+      expect(find.byType(BookDetailShimmer), findsOneWidget);
     });
 
     testWidgets('shows error state with retry', (tester) async {
@@ -204,7 +204,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to load'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try Again'), findsOneWidget);
     });
 
     testWidgets('hides description when null', (tester) async {

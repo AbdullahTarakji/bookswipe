@@ -8,6 +8,7 @@ import 'package:bookswipe/models/user.dart';
 import 'package:bookswipe/providers/providers.dart';
 import 'package:bookswipe/screens/liked_books_screen.dart';
 import 'package:bookswipe/services/api_service.dart';
+import 'package:bookswipe/widgets/shimmer_loading.dart';
 import 'package:bookswipe/services/auth_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -116,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No matches yet'), findsOneWidget);
-      expect(find.text('Swipe right on books you love!'), findsOneWidget);
+      expect(find.textContaining('Swipe right on books you love'), findsOneWidget);
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
     });
 
@@ -154,8 +155,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading your books...'), findsOneWidget);
+      expect(find.byType(FavoritesShimmer), findsOneWidget);
     });
 
     testWidgets('shows error view with retry', (tester) async {
@@ -168,7 +168,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Network error'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try Again'), findsOneWidget);
     });
   });
 }
