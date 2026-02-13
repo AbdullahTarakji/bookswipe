@@ -173,7 +173,7 @@ class _CoverImage extends StatelessWidget {
         fit: BoxFit.cover,
         memCacheWidth: 800,
         maxWidthDiskCache: 800,
-        placeholder: (_, __) => _buildPlaceholder(context),
+        placeholder: (ctx, progress) => _buildPlaceholder(context),
         errorWidget: (ctx, url, err) => Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: const Center(child: Icon(Icons.broken_image, size: 64)),

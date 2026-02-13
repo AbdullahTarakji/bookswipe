@@ -5,6 +5,8 @@ Integrates Prometheus metrics, structured JSON logging, and Sentry error trackin
 """
 
 import logging
+import os as _os
+import pathlib as _pathlib
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -241,8 +243,6 @@ async def health_check():
 
 
 # Serve Flutter web frontend with SPA fallback (must be after all API routes)
-import os as _os
-import pathlib as _pathlib
 _default_web = str(
     _pathlib.Path(__file__).resolve().parent.parent.parent / "frontend" / "build" / "web"
 )
