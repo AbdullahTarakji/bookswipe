@@ -1,0 +1,85 @@
+name: Load Test (Smoke)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ['backend/**']
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'load-test')
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bookswipe
+          POSTGRES_PASSWORD: bookswipe_dev
+          POSTGRES_DB: bookswipe
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://bookswipe:bookswipe_dev@localhost:5432/bookswipe
+          REDIS_URL: redis://localhost:6379
+          SECRET_KEY: ci-test-secret-key
+          GOOGLE_BOOKS_API_KEY: test
+          DEBUG: "true"
+        run: |
+          python -c "from app.database import engine, Base; Base.metadata.create_all(bind=engine)"
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update && sudo apt-get install k6
+
+      - name: Run smoke test
+        run: k6 run --out json=k6-results.json backend/tests/load/smoke.js
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-smoke-results
+          path: k6-results.json
