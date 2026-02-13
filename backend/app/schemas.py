@@ -411,3 +411,163 @@ class PaginatedNotifications(BaseModel):
     page: int
     page_size: int
     unread_count: int
+
+
+# --- Social / Profiles ---
+
+
+class UserProfileResponse(BaseModel):
+    """Response schema for a user profile."""
+
+    user_id: int
+    username: str
+    bio: str = ""
+    avatar_url: str | None = None
+    is_public: bool = True
+    reading_goal: int | None = None
+    followers_count: int = 0
+    following_count: int = 0
+    books_liked_count: int = 0
+    is_following: bool = False
+
+
+class UserProfileUpdate(BaseModel):
+    """Request schema for updating a user profile."""
+
+    bio: str | None = Field(None, max_length=500)
+    avatar_url: str | None = Field(None, max_length=500)
+    is_public: bool | None = None
+    reading_goal: int | None = Field(None, ge=1, le=1000)
+
+    @field_validator("bio")
+    @classmethod
+    def sanitize_bio(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _sanitize_string(v)
+        return v
+
+
+class FollowResponse(BaseModel):
+    """Response schema for a follow relationship."""
+
+    user_id: int
+    username: str
+    avatar_url: str | None = None
+    is_following: bool = False
+
+
+class PaginatedFollows(BaseModel):
+    """Paginated response containing follow relationships."""
+
+    users: list[FollowResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class BookListCreate(BaseModel):
+    """Request schema for creating a book list."""
+
+    name: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(default="", max_length=1000)
+    is_public: bool = True
+
+    @field_validator("name", "description")
+    @classmethod
+    def sanitize_text_fields(cls, v: str) -> str:
+        return _sanitize_string(v)
+
+
+class BookListUpdate(BaseModel):
+    """Request schema for updating a book list."""
+
+    name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=1000)
+    is_public: bool | None = None
+
+    @field_validator("name", "description")
+    @classmethod
+    def sanitize_text_fields(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _sanitize_string(v)
+        return v
+
+
+class BookListItemAdd(BaseModel):
+    """Request schema for adding a book to a list."""
+
+    book_id: str = Field(..., max_length=50)
+    note: str = Field(default="", max_length=500)
+
+    @field_validator("note")
+    @classmethod
+    def sanitize_note(cls, v: str) -> str:
+        return _sanitize_string(v)
+
+
+class BookListItemResponse(BaseModel):
+    """Response schema for a book list item."""
+
+    id: int
+    book_id: str
+    note: str = ""
+    added_at: datetime.datetime
+
+    model_config = {"from_attributes": True}
+
+
+class BookListResponse(BaseModel):
+    """Response schema for a book list."""
+
+    id: int
+    user_id: int
+    name: str
+    description: str = ""
+    is_public: bool = True
+    created_at: datetime.datetime
+    item_count: int = 0
+    owner_username: str = ""
+
+    model_config = {"from_attributes": True}
+
+
+class BookListDetailResponse(BookListResponse):
+    """Response schema for a book list with its items."""
+
+    items: list[BookListItemResponse] = []
+
+
+class PaginatedBookLists(BaseModel):
+    """Paginated response containing book lists."""
+
+    lists: list[BookListResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class ActivityEventResponse(BaseModel):
+    """Response schema for an activity event."""
+
+    id: int
+    user_id: int
+    username: str = ""
+    event_type: str
+    metadata: dict = {}
+    created_at: datetime.datetime
+
+
+class PaginatedActivityFeed(BaseModel):
+    """Paginated response for the activity feed."""
+
+    events: list[ActivityEventResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class UserSearchResponse(BaseModel):
+    """Response schema for user search results."""
+
+    users: list[FollowResponse]
+    total: int
