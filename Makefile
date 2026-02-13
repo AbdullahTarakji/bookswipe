@@ -1,4 +1,5 @@
-.PHONY: dev prod test lint migrate seed seed-demo clean help
+.PHONY: dev prod test lint migrate seed seed-demo clean help \
+       load-smoke load-average load-stress load-spike
 .DEFAULT_GOAL := help
 
 # ── Development ──────────────────────────────────────────────
@@ -32,6 +33,19 @@ test: ## Run backend tests with coverage
 
 test-ci: ## Run tests in CI mode (strict)
 	cd backend && python -m pytest --cov=app --cov-fail-under=70 tests/ -v
+
+# ── Load Testing ────────────────────────────────────────────
+load-smoke: ## Run k6 smoke test (5 VUs, 30s)
+	k6 run backend/tests/load/smoke.js
+
+load-average: ## Run k6 average load test (100 VUs, 5min)
+	k6 run backend/tests/load/average.js
+
+load-stress: ## Run k6 stress test (500→2000 VUs, 10min)
+	k6 run backend/tests/load/stress.js
+
+load-spike: ## Run k6 spike test (5000 VUs, 2min)
+	k6 run backend/tests/load/spike.js
 
 # ── Linting ──────────────────────────────────────────────────
 lint: ## Run linter
