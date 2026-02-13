@@ -129,6 +129,14 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Social Profile'),
+                  subtitle: const Text('Bio, followers, book lists'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/social/profile'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.favorite),
                   title: const Text('Liked Books'),
                   trailing: const Icon(Icons.chevron_right),

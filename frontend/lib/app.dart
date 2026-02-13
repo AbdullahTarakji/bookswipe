@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'main.dart';
+import 'screens/activity_feed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_system_screen.dart';
 import 'screens/admin_users_screen.dart';
 import 'screens/book_detail_screen.dart';
+import 'screens/book_list_detail_screen.dart';
+import 'screens/book_lists_screen.dart';
 import 'screens/categories_screen.dart';
+import 'screens/followers_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/liked_books_screen.dart';
 import 'screens/login_screen.dart';
@@ -14,7 +18,9 @@ import 'screens/notification_inbox_screen.dart';
 import 'screens/notification_preferences_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/social_profile_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/user_search_screen.dart';
 import 'providers/providers.dart';
 import 'theme/app_theme.dart';
 
@@ -103,6 +109,46 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/notifications/preferences',
         builder: (context, state) => const NotificationPreferencesScreen(),
+      ),
+      // Social routes
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/profile',
+        builder: (context, state) => const SocialProfileScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/profile/:userId',
+        builder: (context, state) => SocialProfileScreen(
+          userId: int.tryParse(state.pathParameters['userId'] ?? ''),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/feed',
+        builder: (context, state) => const ActivityFeedScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/lists',
+        builder: (context, state) => const BookListsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/lists/:listId',
+        builder: (context, state) => BookListDetailScreen(
+          listId: int.parse(state.pathParameters['listId']!),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/search',
+        builder: (context, state) => const UserSearchScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/social/followers',
+        builder: (context, state) => const FollowersScreen(),
       ),
     ],
   );

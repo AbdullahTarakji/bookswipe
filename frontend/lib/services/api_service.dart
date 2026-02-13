@@ -425,6 +425,181 @@ class ApiService {
     );
   }
 
+  // --- Social / Profile ---
+
+  /// Fetch the authenticated user's social profile.
+  Future<Map<String, dynamic>> getSocialProfile() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/profile'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Update the authenticated user's social profile.
+  Future<Map<String, dynamic>> updateSocialProfile({
+    String? bio,
+    String? avatarUrl,
+    bool? isPublic,
+    int? readingGoal,
+  }) async {
+    final data = <String, dynamic>{};
+    if (bio != null) data['bio'] = bio;
+    if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+    if (isPublic != null) data['is_public'] = isPublic;
+    if (readingGoal != null) data['reading_goal'] = readingGoal;
+
+    final response = await _requestWithRetry(
+      () => _dio.put('/api/profile', data: data),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Fetch a public user's profile.
+  Future<Map<String, dynamic>> getUserProfile(int userId) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/profile/$userId'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Follow a user.
+  Future<void> followUser(int userId) async {
+    await _requestWithRetry(
+      () => _dio.post('/api/social/follow/$userId'),
+    );
+  }
+
+  /// Unfollow a user.
+  Future<void> unfollowUser(int userId) async {
+    await _requestWithRetry(
+      () => _dio.delete('/api/social/follow/$userId'),
+    );
+  }
+
+  /// Get followers list.
+  Future<Map<String, dynamic>> getFollowers({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/social/followers', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Get following list.
+  Future<Map<String, dynamic>> getFollowing({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/social/following', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Get activity feed.
+  Future<Map<String, dynamic>> getActivityFeed({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/social/feed', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Search for users.
+  Future<Map<String, dynamic>> searchUsers(String query, {int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/social/search', queryParameters: {
+        'q': query,
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  // --- Book Lists ---
+
+  /// Create a new book list.
+  Future<Map<String, dynamic>> createBookList({
+    required String name,
+    String description = '',
+    bool isPublic = true,
+  }) async {
+    final response = await _requestWithRetry(
+      () => _dio.post('/api/book-lists', data: {
+        'name': name,
+        'description': description,
+        'is_public': isPublic,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Get the user's book lists.
+  Future<Map<String, dynamic>> getBookLists({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/book-lists', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Get a book list with items.
+  Future<Map<String, dynamic>> getBookList(int listId) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/book-lists/$listId'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Update a book list.
+  Future<Map<String, dynamic>> updateBookList(int listId, {
+    String? name,
+    String? description,
+    bool? isPublic,
+  }) async {
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (description != null) data['description'] = description;
+    if (isPublic != null) data['is_public'] = isPublic;
+
+    final response = await _requestWithRetry(
+      () => _dio.put('/api/book-lists/$listId', data: data),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Delete a book list.
+  Future<void> deleteBookList(int listId) async {
+    await _requestWithRetry(
+      () => _dio.delete('/api/book-lists/$listId'),
+    );
+  }
+
+  /// Add a book to a list.
+  Future<Map<String, dynamic>> addBookToList(int listId, String bookId, {String note = ''}) async {
+    final response = await _requestWithRetry(
+      () => _dio.post('/api/book-lists/$listId/books', data: {
+        'book_id': bookId,
+        'note': note,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Remove a book from a list.
+  Future<void> removeBookFromList(int listId, String bookId) async {
+    await _requestWithRetry(
+      () => _dio.delete('/api/book-lists/$listId/books/$bookId'),
+    );
+  }
+
   /// Format a [DioException] into a user-friendly error message.
   static String formatError(DioException e) {
     if (e.response != null) {

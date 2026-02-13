@@ -1,5 +1,7 @@
 """SQLAlchemy ORM models for the BookSwipe database schema."""
 
+from __future__ import annotations
+
 import datetime
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
@@ -33,17 +35,24 @@ class User(Base):
     subscription_plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free", server_default="free")
     subscription_end_date: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True, default=None)
 
-    liked_books: Mapped[list["LikedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    skipped_books: Mapped[list["SkippedBook"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    swipe_events: Mapped[list["SwipeEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    preferences: Mapped["UserPreference | None"] = relationship(
+    liked_books: Mapped[list[LikedBook]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    skipped_books: Mapped[list[SkippedBook]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    swipe_events: Mapped[list[SwipeEvent]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    preferences: Mapped[UserPreference | None] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
     )
-    device_tokens: Mapped[list["DeviceToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    notification_preference: Mapped["NotificationPreference | None"] = relationship(
+    device_tokens: Mapped[list[DeviceToken]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    notification_preference: Mapped[NotificationPreference | None] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
     )
-    notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    notifications: Mapped[list[Notification]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+    # Social features
+    profile: Mapped[UserProfile | None] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+    book_lists: Mapped[list[BookList]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    activity_events: Mapped[list[ActivityEvent]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     @property
     def is_premium(self) -> bool:
@@ -214,6 +223,96 @@ class Notification(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="notifications")
+
+
+class UserProfile(Base):
+    """Extended user profile with bio, avatar, and reading preferences."""
+
+    __tablename__ = "user_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    bio: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    reading_goal: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    user: Mapped[User] = relationship(back_populates="profile")
+
+
+class Follow(Base):
+    """A follow relationship between two users."""
+
+    __tablename__ = "follows"
+    __table_args__ = (
+        UniqueConstraint("follower_id", "following_id", name="uq_follow"),
+        Index("ix_follows_follower_id", "follower_id"),
+        Index("ix_follows_following_id", "following_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    follower_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    following_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    follower: Mapped[User] = relationship(foreign_keys=[follower_id])
+    following: Mapped[User] = relationship(foreign_keys=[following_id])
+
+
+class BookList(Base):
+    """A curated list of books created by a user."""
+
+    __tablename__ = "book_lists"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(String(1000), nullable=False, default="", server_default="")
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="book_lists")
+    items: Mapped[list[BookListItem]] = relationship(back_populates="book_list", cascade="all, delete-orphan")
+
+
+class BookListItem(Base):
+    """A book entry within a curated book list."""
+
+    __tablename__ = "book_list_items"
+    __table_args__ = (
+        UniqueConstraint("list_id", "book_id", name="uq_list_book"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("book_lists.id", ondelete="CASCADE"), nullable=False, index=True)
+    book_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    note: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
+    added_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    book_list: Mapped[BookList] = relationship(back_populates="items")
+
+
+class ActivityEvent(Base):
+    """Records user activity for social feed display."""
+
+    __tablename__ = "activity_events"
+    __table_args__ = (
+        Index("ix_activity_events_user_created", "user_id", "created_at"),
+        Index("ix_activity_events_created_at", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(50), nullable=False)  # liked_book, created_list, followed_user
+    event_data: Mapped[str] = mapped_column("metadata", Text, nullable=False, default="{}", server_default="{}")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="activity_events")
 
 
 SEED_CATEGORIES = [
