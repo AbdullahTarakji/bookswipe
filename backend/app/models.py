@@ -297,6 +297,22 @@ class BookListItem(Base):
     book_list: Mapped[BookList] = relationship(back_populates="items")
 
 
+class BookCover(Base):
+    """Processed cover images stored in S3 with multiple size variants."""
+
+    __tablename__ = "book_covers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    book_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    thumbnail_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    card_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    detail_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    blurhash: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    processed_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 class ActivityEvent(Base):
     """Records user activity for social feed display."""
 

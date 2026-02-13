@@ -1,5 +1,8 @@
 """Background tasks for the BookSwipe worker process."""
 
+from __future__ import annotations
+
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -77,3 +80,77 @@ async def send_queued_notification(
         return notif.id
     finally:
         db.close()
+
+
+async def process_book_cover(ctx: dict, book_id: str) -> bool:
+    """Fetch, resize, and upload cover images for a single book.
+
+    Creates or updates the BookCover record with S3 URLs and blurhash.
+    Returns True on success, False if no cover image was available.
+    """
+    from app.database import SessionLocal
+    from app.models import BookCover
+    from app.services.image_service import process_and_upload_cover
+
+    result = await process_and_upload_cover(book_id)
+    if not result:
+        logger.warning("process_book_cover: no cover for book %s", book_id)
+        return False
+
+    db = SessionLocal()
+    try:
+        existing = db.query(BookCover).filter(BookCover.book_id == book_id).first()
+        if existing:
+            existing.thumbnail_url = result["thumbnail_url"]
+            existing.card_url = result["card_url"]
+            existing.detail_url = result["detail_url"]
+            existing.blurhash = result["blurhash"]
+            existing.processed_at = datetime.now(timezone.utc)
+        else:
+            db.add(BookCover(
+                book_id=book_id,
+                thumbnail_url=result["thumbnail_url"],
+                card_url=result["card_url"],
+                detail_url=result["detail_url"],
+                blurhash=result["blurhash"],
+            ))
+        db.commit()
+        logger.info("process_book_cover: saved covers for book %s", book_id)
+        return True
+    finally:
+        db.close()
+
+
+async def process_all_covers(ctx: dict) -> int:
+    """Batch-process covers for all books that don't yet have CDN images.
+
+    Scans liked books and processes any without a BookCover record.
+    Returns the number of books processed.
+    """
+    from app.database import SessionLocal
+    from app.models import BookCover, LikedBook
+
+    db = SessionLocal()
+    try:
+        # Find all unique book IDs from liked books that have no cover record
+        existing_ids = {row[0] for row in db.query(BookCover.book_id).all()}
+        all_book_ids = {
+            row[0] for row in db.query(distinct(LikedBook.google_book_id)).all()
+        }
+        unprocessed = all_book_ids - existing_ids
+    finally:
+        db.close()
+
+    count = 0
+    for bid in unprocessed:
+        try:
+            ok = await process_book_cover(ctx, bid)
+            if ok:
+                count += 1
+            # Small delay to avoid hammering Google Books
+            await asyncio.sleep(0.5)
+        except Exception:
+            logger.exception("process_all_covers: failed for book %s", bid)
+
+    logger.info("process_all_covers: processed %d books", count)
+    return count

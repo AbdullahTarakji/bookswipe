@@ -77,6 +77,14 @@ class Settings(BaseSettings):
     # Firebase Cloud Messaging
     fcm_credentials_path: str = ""
 
+    # S3 / MinIO (cover image CDN)
+    s3_bucket: str = "bookswipe-covers"
+    s3_region: str = "us-east-1"
+    s3_endpoint_url: str = ""  # e.g. http://minio:9000 for local dev
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+    s3_public_url: str = ""  # public-facing base URL for cover images
+
     # Admin seeding
     admin_email: str = ""
     admin_password: str = ""

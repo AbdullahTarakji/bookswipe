@@ -4,14 +4,14 @@ import datetime
 
 import httpx
 from fastapi import APIRouter, Depends, Query, status
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
 from app.exceptions import NotFoundError, SwipeLimitError, ValidationError
 from app.metrics import books_liked_total, books_skipped_total
-from app.models import DailySwipeCount, User
+from app.models import BookCover, DailySwipeCount, User
 from app.repositories.book_repository import BookRepository
 from app.schemas import (
     BookAction,
@@ -53,6 +53,20 @@ def _check_and_increment_swipe(user: User, db: Session) -> None:
     db.flush()
 
 
+def _enrich_with_cover(book_dict: dict, db: Session) -> dict:
+    """Add CDN cover URLs and blurhash to a book response dict if available."""
+    book_id = book_dict.get("google_book_id", "")
+    if not book_id:
+        return book_dict
+    cover = db.query(BookCover).filter(BookCover.book_id == book_id).first()
+    if cover:
+        book_dict["blurhash"] = cover.blurhash
+        book_dict["thumbnail_cdn"] = cover.thumbnail_url
+        book_dict["card_cdn"] = cover.card_url
+        book_dict["detail_cdn"] = cover.detail_url
+    return book_dict
+
+
 @router.get("/discover", response_model=PaginatedBooks)
 async def discover_books(
     category: str = Query("fiction", min_length=1),
@@ -76,7 +90,28 @@ async def discover_books(
         exclude_ids=exclude_ids if exclude_ids else None,
         user_id=user_id,
     )
-    return PaginatedBooks(books=books, total=total, page=page, page_size=page_size)
+
+    # Enrich with CDN cover data
+    enriched = []
+    book_ids = [b.google_book_id for b in books]
+    covers = {
+        c.book_id: c
+        for c in db.query(BookCover).filter(BookCover.book_id.in_(book_ids)).all()
+    } if book_ids else {}
+
+    for book in books:
+        data = book.model_dump()
+        cover = covers.get(book.google_book_id)
+        if cover:
+            data["blurhash"] = cover.blurhash
+            data["thumbnail_cdn"] = cover.thumbnail_url
+            data["card_cdn"] = cover.card_url
+            data["detail_cdn"] = cover.detail_url
+        enriched.append(data)
+
+    return PaginatedBooks(
+        books=enriched, total=total, page=page, page_size=page_size,
+    )
 
 
 @router.get("/liked", response_model=PaginatedLikedBooks)
@@ -93,18 +128,35 @@ def get_liked_books(
 
 
 @router.api_route("/cover-proxy/{book_id}", methods=["GET", "HEAD"])
-async def cover_proxy(book_id: str):
-    """Proxy Google Books cover images — fetches highest quality available.
+async def cover_proxy(
+    book_id: str,
+    size: str = Query("detail", pattern=r"^(thumbnail|card|detail)$"),
+    db: Session = Depends(get_db),
+):
+    """Serve book cover images from CDN/S3 if available, fallback to Google Books.
 
-    Google Books imageLinks usually only has 'thumbnail' (~128px).
-    We construct direct content URLs with higher zoom levels to get
-    crisp images that match what you see on books.google.com.
+    Supports size parameter: thumbnail (150px), card (400px), detail (800px).
+    Redirects to S3 URL when a processed cover exists.
     """
-    # Direct Google Books content URL — zoom=0 is maximum resolution
+    # Check for processed CDN cover
+    cover = db.query(BookCover).filter(BookCover.book_id == book_id).first()
+    if cover:
+        url_map = {
+            "thumbnail": cover.thumbnail_url,
+            "card": cover.card_url,
+            "detail": cover.detail_url,
+        }
+        cdn_url = url_map.get(size, cover.detail_url)
+        return RedirectResponse(
+            url=cdn_url,
+            status_code=302,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    # Fallback: proxy from Google Books directly
     base = f"https://books.google.com/books/content?id={book_id}&printsec=frontcover&img=1"
 
     async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-        # Try zoom levels from highest to lowest quality
         for zoom in (0, 3, 2, 1):
             url = f"{base}&zoom={zoom}"
             img_resp = await client.get(url)
@@ -138,14 +190,45 @@ async def cover_proxy(book_id: str):
         raise NotFoundError("No cover image available")
 
 
+@router.get("/cover/{book_id}/blurhash")
+def get_cover_blurhash(
+    book_id: str,
+    db: Session = Depends(get_db),
+):
+    """Return blurhash and CDN URLs for a book cover."""
+    cover = db.query(BookCover).filter(BookCover.book_id == book_id).first()
+    if not cover:
+        raise NotFoundError("No processed cover for this book")
+    return {
+        "book_id": cover.book_id,
+        "blurhash": cover.blurhash,
+        "thumbnail_url": cover.thumbnail_url,
+        "card_url": cover.card_url,
+        "detail_url": cover.detail_url,
+    }
+
+
 @router.get("/{book_id}", response_model=BookDetail)
 async def get_book_detail(
     book_id: str,
     current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
 ):
     """Fetch detailed information for a single book by Google Books ID."""
     user_id = current_user.id if current_user else None
-    return await get_book_by_id(book_id, user_id=user_id)
+    detail = await get_book_by_id(book_id, user_id=user_id)
+
+    # Enrich with CDN data
+    cover = db.query(BookCover).filter(BookCover.book_id == book_id).first()
+    if cover:
+        detail = detail.model_copy(update={
+            "blurhash": cover.blurhash,
+            "thumbnail_cdn": cover.thumbnail_url,
+            "card_cdn": cover.card_url,
+            "detail_cdn": cover.detail_url,
+        })
+
+    return detail
 
 
 @router.post("/like", response_model=LikedBookResponse, status_code=status.HTTP_201_CREATED)

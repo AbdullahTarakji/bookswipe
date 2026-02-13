@@ -153,6 +153,10 @@ class BookSummary(BaseModel):
     page_count: int | None = None
     published_date: str | None = None
     publisher: str | None = None
+    blurhash: str | None = None
+    thumbnail_cdn: str | None = None
+    card_cdn: str | None = None
+    detail_cdn: str | None = None
 
 
 class BookDetail(BookSummary):

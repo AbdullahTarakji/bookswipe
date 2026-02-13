@@ -13,6 +13,10 @@ class Book {
   final String? publisher;
   final String? previewLink;
   final bool isLiked;
+  final String? blurhash;
+  final String? thumbnailCdn;
+  final String? cardCdn;
+  final String? detailCdn;
 
   const Book({
     required this.id,
@@ -28,11 +32,20 @@ class Book {
     this.publisher,
     this.previewLink,
     this.isLiked = false,
+    this.blurhash,
+    this.thumbnailCdn,
+    this.cardCdn,
+    this.detailCdn,
   });
 
   String get authorsText => authors.join(', ');
 
+  /// Whether a blurhash placeholder is available for progressive loading.
+  bool get hasBlurhash => blurhash != null && blurhash!.isNotEmpty;
+
+  /// Best available cover URL: CDN card size > proxy > raw thumbnail.
   String get highResThumbnail {
+    if (cardCdn != null && cardCdn!.isNotEmpty) return cardCdn!;
     if (thumbnailUrl == null || thumbnailUrl!.isEmpty) return '';
     final url = thumbnailUrl!;
     // Proxy URLs are relative — use as-is (same origin)
@@ -40,6 +53,12 @@ class Book {
       return url;
     }
     return url;
+  }
+
+  /// Detail-quality cover URL for full-screen views.
+  String get detailCoverUrl {
+    if (detailCdn != null && detailCdn!.isNotEmpty) return detailCdn!;
+    return highResThumbnail;
   }
 
   Book copyWith({
@@ -56,6 +75,10 @@ class Book {
     String? publisher,
     String? previewLink,
     bool? isLiked,
+    String? blurhash,
+    String? thumbnailCdn,
+    String? cardCdn,
+    String? detailCdn,
   }) {
     return Book(
       id: id ?? this.id,
@@ -71,6 +94,10 @@ class Book {
       publisher: publisher ?? this.publisher,
       previewLink: previewLink ?? this.previewLink,
       isLiked: isLiked ?? this.isLiked,
+      blurhash: blurhash ?? this.blurhash,
+      thumbnailCdn: thumbnailCdn ?? this.thumbnailCdn,
+      cardCdn: cardCdn ?? this.cardCdn,
+      detailCdn: detailCdn ?? this.detailCdn,
     );
   }
 
@@ -113,6 +140,10 @@ class Book {
       publisher: json['publisher'] as String?,
       previewLink: json['preview_link'] as String?,
       isLiked: json['is_liked'] as bool? ?? false,
+      blurhash: json['blurhash'] as String?,
+      thumbnailCdn: json['thumbnail_cdn'] as String?,
+      cardCdn: json['card_cdn'] as String?,
+      detailCdn: json['detail_cdn'] as String?,
     );
   }
 
@@ -159,6 +190,10 @@ class Book {
       'publisher': publisher,
       'preview_link': previewLink,
       'is_liked': isLiked,
+      'blurhash': blurhash,
+      'thumbnail_cdn': thumbnailCdn,
+      'card_cdn': cardCdn,
+      'detail_cdn': detailCdn,
     };
   }
 
