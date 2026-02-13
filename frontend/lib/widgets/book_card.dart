@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import '../models/book.dart';
 import '../theme/app_theme.dart';
 
@@ -8,6 +9,8 @@ import '../theme/app_theme.dart';
 /// The book cover fills the entire card. Title, author, and rating are
 /// rendered on a gradient overlay at the bottom — exactly like Tinder
 /// shows name + age over the profile photo.
+///
+/// Supports progressive loading: blurhash placeholder → full image.
 class BookCard extends StatelessWidget {
   final Book book;
   final VoidCallback? onTap;
@@ -170,15 +173,27 @@ class _CoverImage extends StatelessWidget {
         fit: BoxFit.cover,
         memCacheWidth: 800,
         maxWidthDiskCache: 800,
-        placeholder: (_,_) => Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
+        placeholder: (_, __) => _buildPlaceholder(context),
         errorWidget: (ctx, url, err) => Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: const Center(child: Icon(Icons.broken_image, size: 64)),
         ),
       ),
+    );
+  }
+
+  Widget _buildPlaceholder(BuildContext context) {
+    if (book.hasBlurhash) {
+      return BlurHash(
+        hash: book.blurhash!,
+        imageFit: BoxFit.cover,
+        decodingWidth: 32,
+        decodingHeight: 32,
+      );
+    }
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }

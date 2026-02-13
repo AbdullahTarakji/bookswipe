@@ -7,7 +7,7 @@ from alembic import context
 from app.database import Base
 from app.models import (  # noqa: F401, E402
     User, LikedBook, SkippedBook, Category, BlacklistedToken, DailySwipeCount, SwipeEvent, UserPreference,
-    DeviceToken, NotificationPreference, Notification,
+    DeviceToken, NotificationPreference, Notification, BookCover,
 )
 from app.config import settings  # noqa: E402
 
