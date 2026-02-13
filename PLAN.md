@@ -1,12 +1,12 @@
 # BookSwipe — Project Plan
 
 ## Vision
-A Tinder-style book discovery app. Users swipe through books, like or skip them, filter by category, and view detailed book info. Cross-platform via Flutter.
+A Swipe-style book discovery app. Users swipe through books, like or skip them, filter by category, and view detailed book info. Cross-platform via Flutter.
 
 ## Architecture
 
 ### Frontend (Flutter)
-- Tinder-style swipe cards (flutter_card_swiper or similar)
+- Swipe-style swipe cards (flutter_card_swiper or similar)
 - Screens: Home/Swipe, Categories, Liked Books, Book Detail
 - State management: Riverpod
 - HTTP client: Dio

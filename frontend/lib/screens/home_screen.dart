@@ -15,7 +15,7 @@ import '../widgets/shimmer_loading.dart';
 import '../widgets/swipe_overlay.dart';
 import '../widgets/swipe_snackbar.dart';
 
-/// Main discovery screen — Tinder-style full-screen card swiping.
+/// Main discovery screen — Swipe-style full-screen card swiping.
 class HomeScreen extends ConsumerStatefulWidget {
   /// Creates the home discovery screen.
   const HomeScreen({super.key});
@@ -46,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Tinder-style top bar ──
+            // ── Swipe-style top bar ──
             _TopBar(
               onRefresh: () =>
                   ref.read(discoverBooksProvider.notifier).refresh(),
@@ -72,7 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     );
                   }
                   return RefreshIndicator(
-                    color: AppTheme.tinderRed,
+                    color: AppTheme.brandRed,
                     onRefresh: () async {
                       await ref
                           .read(discoverBooksProvider.notifier)
@@ -159,7 +159,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
 
-        // ── Tinder action buttons ──
+        // ── Action buttons ──
         _ActionButtons(
           onRewind: () => _handleRewind(),
           onNope: () =>
@@ -198,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     valueColor: AlwaysStoppedAnimation(
                       used >= limit
                           ? AppTheme.nopeRed
-                          : AppTheme.tinderRed,
+                          : AppTheme.brandRed,
                     ),
                     minHeight: 4,
                   ),
@@ -312,7 +312,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Tinder-style top bar: logo centre, no heavy AppBar
+//  Swipe-style top bar: logo centre, no heavy AppBar
 // ═══════════════════════════════════════════════════════════════
 
 class _TopBar extends StatelessWidget {
@@ -334,7 +334,7 @@ class _TopBar extends StatelessWidget {
           // Centre logo
           ShaderMask(
             shaderCallback: (bounds) =>
-                AppTheme.tinderGradient.createShader(bounds),
+                AppTheme.brandGradient.createShader(bounds),
             child: const Icon(
               Icons.local_fire_department,
               size: 36,
@@ -365,7 +365,7 @@ class _TopBarIcon extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Tinder-style circular action buttons
+//  Swipe-style circular action buttons
 // ═══════════════════════════════════════════════════════════════
 
 class _ActionButtons extends StatelessWidget {
@@ -550,7 +550,7 @@ class _BookDetailSheet extends StatelessWidget {
                     Text(
                       book.authorsText,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.tinderRed,
+                        color: AppTheme.brandRed,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -601,14 +601,14 @@ class _BookDetailSheet extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppTheme.tinderRed
+                              color: AppTheme.brandRed
                                   .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               cat,
                               style: const TextStyle(
-                                color: AppTheme.tinderRed,
+                                color: AppTheme.brandRed,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),

@@ -4,10 +4,10 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import '../models/book.dart';
 import '../theme/app_theme.dart';
 
-/// Tinder-style full-bleed book card.
+/// Swipe-style full-bleed book card.
 ///
 /// The book cover fills the entire card. Title, author, and rating are
-/// rendered on a gradient overlay at the bottom — exactly like Tinder
+/// rendered on a gradient overlay at the bottom — exactly like a dating app
 /// shows name + age over the profile photo.
 ///
 /// Supports progressive loading: blurhash placeholder → full image.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Tinder-style stamp overlay shown during a swipe.
+/// Swipe-style stamp overlay shown during a swipe.
 ///
 /// Renders a rotated bordered "LIKE" (green, top-left) or "NOPE"
 /// (red, top-right) stamp whose opacity increases with the drag distance.

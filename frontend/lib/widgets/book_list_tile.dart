@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/book.dart';
 import '../theme/app_theme.dart';
 
-/// Tinder-style "match" list tile for the Liked Books screen.
+/// Swipe-style "match" list tile for the Liked Books screen.
 class BookListTile extends StatelessWidget {
   final Book book;
   final VoidCallback? onTap;

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Tinder-inspired theme for BookSwipe.
+/// Swipe-inspired theme for BookSwipe.
 class AppTheme {
   AppTheme._();
 
-  // --- Tinder brand colours ---
-  static const tinderPink = Color(0xFFFD297B);
-  static const tinderRed = Color(0xFFFF5864);
-  static const tinderOrange = Color(0xFFFFC371);
+  // --- Brand colours ---
+  static const brandPink = Color(0xFFFD297B);
+  static const brandRed = Color(0xFFFF5864);
+  static const brandOrange = Color(0xFFFFC371);
 
   // Action button colours
   static const nopeRed = Color(0xFFFF4458);
@@ -20,21 +20,21 @@ class AppTheme {
   static const textPrimary = Color(0xFF21262E);
   static const textSecondary = Color(0xFF505965);
 
-  // Tinder gradient (used in headers, buttons, accents)
-  static const tinderGradient = LinearGradient(
-    colors: [tinderPink, tinderRed, tinderOrange],
+  // Brand gradient (used in headers, buttons, accents)
+  static const brandGradient = LinearGradient(
+    colors: [brandPink, brandRed, brandOrange],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   // ── Light Theme ──────────────────────────────────────────────
   static ThemeData get lightTheme {
-    const primary = tinderRed;
+    const primary = brandRed;
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: Brightness.light,
       primary: primary,
-      secondary: tinderPink,
+      secondary: brandPink,
       surface: Colors.white,
       error: nopeRed,
     );
@@ -107,13 +107,13 @@ class AppTheme {
     const darkBg = Color(0xFF111418);
     const darkSurface = Color(0xFF1A1D23);
     const darkCard = Color(0xFF22262D);
-    const primary = tinderRed;
+    const primary = brandRed;
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: Brightness.dark,
       primary: primary,
-      secondary: tinderPink,
+      secondary: brandPink,
       surface: darkSurface,
       error: nopeRed,
     );

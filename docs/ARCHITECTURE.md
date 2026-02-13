@@ -2,7 +2,7 @@
 
 ## Overview
 
-BookSwipe is a full-stack book discovery application with a Flutter frontend and Python FastAPI backend. Users swipe through books (like Tinder), building a personal reading list. The system learns from swipe history to generate personalized recommendations.
+BookSwipe is a full-stack book discovery application with a Flutter frontend and Python FastAPI backend. Users swipe through books (like a dating app), building a personal reading list. The system learns from swipe history to generate personalized recommendations.
 
 ## System Architecture
 

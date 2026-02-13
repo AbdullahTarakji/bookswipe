@@ -82,8 +82,8 @@ class EmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.tinderPink.withValues(alpha: 0.12),
-                    AppTheme.tinderOrange.withValues(alpha: 0.12),
+                    AppTheme.brandPink.withValues(alpha: 0.12),
+                    AppTheme.brandOrange.withValues(alpha: 0.12),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -91,7 +91,7 @@ class EmptyState extends StatelessWidget {
               ),
               child: ShaderMask(
                 shaderCallback: (bounds) =>
-                    AppTheme.tinderGradient.createShader(bounds),
+                    AppTheme.brandGradient.createShader(bounds),
                 child: Icon(
                   icon,
                   size: 56,

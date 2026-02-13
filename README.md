@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**Tinder for Books** -- Swipe right to like, swipe left to skip. Discover your next read.
+**Swipe-based book discovery** -- Swipe right to like, swipe left to skip. Discover your next read.
 
 ## Quick Start
 
@@ -86,7 +86,7 @@ HTTP Request → Router → Service → Repository → Database
 
 ## Features
 
-- Swipe through books with a Tinder-style card UI
+- Swipe through books with a Swipe-style card UI
 - Filter by 14 categories (Fiction, Romance, Sci-Fi, Thriller, etc.)
 - Content-based recommendation engine with preference learning
 - Save liked books to a personal reading list

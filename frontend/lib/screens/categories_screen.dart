@@ -19,7 +19,7 @@ class CategoriesScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ShaderMask(
-              shaderCallback: (bounds) => AppTheme.tinderGradient.createShader(bounds),
+              shaderCallback: (bounds) => AppTheme.brandGradient.createShader(bounds),
               child: const Icon(Icons.grid_view, size: 22, color: Colors.white),
             ),
             const SizedBox(width: 8),

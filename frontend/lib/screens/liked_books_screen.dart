@@ -28,7 +28,7 @@ class LikedBooksScreen extends ConsumerWidget {
           children: [
             ShaderMask(
               shaderCallback: (bounds) =>
-                  AppTheme.tinderGradient.createShader(bounds),
+                  AppTheme.brandGradient.createShader(bounds),
               child: const Icon(Icons.favorite, size: 22, color: Colors.white),
             ),
             const SizedBox(width: 8),
@@ -50,7 +50,7 @@ class LikedBooksScreen extends ConsumerWidget {
           }
 
           return RefreshIndicator(
-            color: AppTheme.tinderRed,
+            color: AppTheme.brandRed,
             onRefresh: () async {
               ref.read(likedBooksProvider.notifier).refresh();
             },
