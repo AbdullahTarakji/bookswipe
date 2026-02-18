@@ -30,7 +30,7 @@
 | 2.6 | **Use Apple IAP for subscriptions** (NOT Stripe for in-app digital content) | §3.1.1 In-App Purchase | ⬜ |
 | 2.7 | **Human Interface Guidelines compliance** — standard iOS patterns, navigation, typography | §4.0 Design | ⬜ |
 | 2.8 | **Privacy policy URL** — must be provided and accessible | §5.1 Privacy | ⬜ |
-| 2.9 | **Login/account deletion** — must offer "Sign in with Apple" if any third-party sign-in is offered; must support account deletion | §4.8, §5.1.1 | ⬜ |
+| 2.9 | **Login/account deletion** — must offer "Sign in with Apple" if any third-party sign-in is offered; must support account deletion | §4.8, §5.1.1 | ✅ |
 | 2.10 | **No hidden features or remote toggling** that changes app behavior post-review | §2.3.1 | ⬜ |
 
 ---
@@ -45,7 +45,7 @@
 | 3.4 | **iPad support** — either Universal or iPhone-only (if iPhone-only, justify in review notes) | Recommended: support iPad | ⬜ |
 | 3.5 | **App icon: 1024×1024px** single icon in Assets.xcassets (Xcode auto-generates all sizes) | Required; no alpha/transparency; PNG format | ⬜ |
 | 3.6 | **Launch screen** — use LaunchScreen.storyboard (not static images); no logos per HIG | Required | ⬜ |
-| 3.7 | **Dark mode support** (recommended, not required) | Best practice per HIG | ⬜ |
+| 3.7 | **Dark mode support** (recommended, not required) | Best practice per HIG | ✅ |
 | 3.8 | **64-bit support** | Required since iOS 11; Flutter handles this | ⬜ |
 | 3.9 | **IPv6 networking support** | Apple requires apps work on IPv6-only networks | ⬜ |
 | 3.10 | **Info.plist usage descriptions** — for any permissions (camera, photo library, notifications, tracking) | Rejection if missing | ⬜ |
@@ -59,14 +59,14 @@
 
 | # | Item | Details | Status |
 |---|------|---------|--------|
-| 4.1 | **Implement StoreKit 2 / `in_app_purchase` Flutter plugin** | Replace Stripe for iOS subscription handling | ⬜ |
+| 4.1 | **Implement StoreKit 2 / `in_app_purchase` Flutter plugin** | Replace Stripe for iOS subscription handling | ✅ |
 | 4.2 | **Configure subscriptions in App Store Connect** — create subscription group, set pricing tiers, durations | Required before IAP works | ⬜ |
-| 4.3 | **Display subscription terms BEFORE purchase** — price, duration, renewal terms, cancellation policy | §3.1.2(a) — rejection if missing | ⬜ |
-| 4.4 | **"Restore Purchases" button** — prominently accessible in subscription/settings screen | §3.1.5(b) — common rejection reason | ⬜ |
-| 4.5 | **Subscription management** — link to Apple subscription management or use `showManageSubscriptions()` | Best practice per Apple | ⬜ |
+| 4.3 | **Display subscription terms BEFORE purchase** — price, duration, renewal terms, cancellation policy | §3.1.2(a) — rejection if missing | ✅ |
+| 4.4 | **"Restore Purchases" button** — prominently accessible in subscription/settings screen | §3.1.5(b) — common rejection reason | ✅ |
+| 4.5 | **Subscription management** — link to Apple subscription management or use `showManageSubscriptions()` | Best practice per Apple | ✅ |
 | 4.6 | **Free trial disclosure** — if offering trials, clearly state duration and post-trial price | §3.1.2(a) | ⬜ |
 | 4.7 | **Server-side receipt validation** — use App Store Server API / Server Notifications V2 | Prevent fraud, sync subscription state | ⬜ |
-| 4.8 | **Dual payment system** — keep Stripe for Android/web, Apple IAP for iOS | Platform-specific implementation | ⬜ |
+| 4.8 | **Dual payment system** — keep Stripe for Android/web, Apple IAP for iOS | Platform-specific implementation | ✅ |
 | 4.9 | **Handle subscription states** — expired, grace period, billing retry, revoked | Required for good UX | ⬜ |
 | 4.10 | **Sandbox testing** — test all IAP flows in sandbox environment before submission | Required | ⬜ |
 | 4.11 | **Apple's commission** — 15% (Small Business Program) or 30% standard; factor into pricing | Financial planning | ⬜ |
@@ -78,13 +78,13 @@
 
 | # | Item | Details | Status |
 |---|------|---------|--------|
-| 5.1 | **Privacy Policy URL** — publicly accessible, linked in App Store Connect AND in-app | Required; rejection without it | ⬜ |
+| 5.1 | **Privacy Policy URL** — publicly accessible, linked in App Store Connect AND in-app | Required; rejection without it | ✅ |
 | 5.2 | **App Privacy "Nutrition Labels"** — complete questionnaire in App Store Connect declaring all data collected | Required since Dec 2020 | ⬜ |
 | 5.3 | **Categories to declare:** Contact Info (email), Identifiers (user ID), Usage Data (app interactions), Purchases | Based on BookSwipe features | ⬜ |
 | 5.4 | **App Tracking Transparency (ATT)** — if using IDFA or cross-app tracking, must show ATT prompt via `requestTrackingAuthorization()` | §5.1.2 — if not tracking, declare "does not track" | ⬜ |
 | 5.5 | **NSUserTrackingUsageDescription** in Info.plist if using ATT | Required if requesting tracking permission | ⬜ |
 | 5.6 | **Third-party SDK privacy manifests** — all SDKs must include privacy manifests (required since Spring 2024) | Apple rejects without them | ⬜ |
-| 5.7 | **Required Reason APIs** — if using UserDefaults, file timestamp, disk space, etc., must declare reasons in PrivacyInfo.xcprivacy | Required since Spring 2024 | ⬜ |
+| 5.7 | **Required Reason APIs** — if using UserDefaults, file timestamp, disk space, etc., must declare reasons in PrivacyInfo.xcprivacy | Required since Spring 2024 | ✅ |
 | 5.8 | **Data minimization** — only collect data necessary for app functionality | Best practice | ⬜ |
 
 ---
@@ -93,12 +93,12 @@
 
 | # | Item | Details | Status |
 |---|------|---------|--------|
-| 6.1 | **Terms of Service / Terms of Use** — hosted URL, linked in-app | Required for subscription apps | ⬜ |
+| 6.1 | **Terms of Service / Terms of Use** — hosted URL, linked in-app | Required for subscription apps | ✅ |
 | 6.2 | **EULA** — use Apple's standard EULA or provide custom one in App Store Connect | Required | ⬜ |
 | 6.3 | **GDPR compliance** — consent mechanisms, data export, right to deletion (for EU users) | Legal requirement | ⬜ |
 | 6.4 | **CCPA compliance** — "Do Not Sell My Data" option for California users | Legal requirement | ⬜ |
 | 6.5 | **Age Rating** — complete questionnaire in App Store Connect; BookSwipe likely 4+ or 12+ depending on content | Required | ⬜ |
-| 6.6 | **Account deletion** — must allow users to delete their account and data from within the app | §5.1.1(v) — required since June 2022 | ⬜ |
+| 6.6 | **Account deletion** — must allow users to delete their account and data from within the app | §5.1.1(v) — required since June 2022 | ✅ |
 | 6.7 | **Copyright** — ensure book cover images, descriptions are used with proper licensing | Avoid IP infringement | ⬜ |
 | 6.8 | **Export compliance (ECCN)** — declare whether app uses encryption (HTTPS counts but is usually exempt) | Required in App Store Connect | ⬜ |
 
@@ -176,9 +176,9 @@
 | 10.5 | **Demo account for review** — provide working login credentials in review notes | Apple WILL test login flows | ⬜ |
 | 10.6 | **Backend servers running** during review | Apple tests real connectivity | ⬜ |
 | 10.7 | **Accurate screenshots** — must match actual app UI | §2.3 Metadata | ⬜ |
-| 10.8 | **"Restore Purchases" button present** | Missing = rejection | ⬜ |
-| 10.9 | **Sign in with Apple** if offering Google/Facebook sign-in | §4.8 — required | ⬜ |
-| 10.10 | **Account deletion** functionality works | §5.1.1(v) | ⬜ |
+| 10.8 | **"Restore Purchases" button present** | Missing = rejection | ✅ |
+| 10.9 | **Sign in with Apple** if offering Google/Facebook sign-in | §4.8 — required | ✅ |
+| 10.10 | **Account deletion** functionality works | §5.1.1(v) | ✅ |
 | 10.11 | **Privacy policy accessible** (not 404) | Common oversight | ⬜ |
 | 10.12 | **No references to other platforms** — don't say "also on Android" in screenshots/description | §2.3 | ⬜ |
 | 10.13 | **No external payment links** — cannot direct users to pay outside the app for digital content | §3.1.1 (exception: EU "link entitlement") | ⬜ |
@@ -191,16 +191,16 @@
 
 | # | Item | Guideline | Status |
 |---|------|-----------|--------|
-| 11.1 | **Display before paywall:** subscription name, price, duration, renewal terms | §3.1.2(a) | ⬜ |
-| 11.2 | **Link to Terms of Use and Privacy Policy** on subscription screen | §3.1.2(a) | ⬜ |
-| 11.3 | **"Restore Purchases"** button on subscription/paywall screen | §3.1.5(b) | ⬜ |
+| 11.1 | **Display before paywall:** subscription name, price, duration, renewal terms | §3.1.2(a) | ✅ |
+| 11.2 | **Link to Terms of Use and Privacy Policy** on subscription screen | §3.1.2(a) | ✅ |
+| 11.3 | **"Restore Purchases"** button on subscription/paywall screen | §3.1.5(b) | ✅ |
 | 11.4 | **Subscription management link** — link to `https://apps.apple.com/account/subscriptions` or use StoreKit API | Recommended | ⬜ |
 | 11.5 | **Free trial terms** — clearly state: "X days free, then $Y/period" | §3.1.2(a) | ⬜ |
 | 11.6 | **No misleading "free" claims** — if app requires subscription, don't market as "free" | Common rejection | ⬜ |
 | 11.7 | **Cancellation info** — explain how to cancel before being charged | Best practice | ⬜ |
 | 11.8 | **Grace period handling** — Apple offers 6/16-day grace period for billing issues; handle gracefully | Retain subscribers | ⬜ |
 | 11.9 | **Introductory offers** — configure in App Store Connect if offering (free trial, pay-as-you-go, pay-up-front) | Optional but recommended | ⬜ |
-| 11.10 | **Subscription status in app** — show current plan, expiry, renewal status | Best practice | ⬜ |
+| 11.10 | **Subscription status in app** — show current plan, expiry, renewal status | Best practice | ✅ |
 
 ---
 

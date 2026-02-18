@@ -58,13 +58,13 @@
 
 | # | Task | Why | Status |
 |---|------|-----|--------|
-| 4.1 | **⚠️ REPLACE Stripe with Google Play Billing for in-app subscriptions** — Google Play policy REQUIRES Google Play's billing system for digital goods/subscriptions sold within the app. Stripe CANNOT be used for this. | [Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738) — violation = app rejection/removal | ⬜ Not started |
-| 4.2 | Integrate the [`in_app_purchase`](https://pub.dev/packages/in_app_purchase) Flutter plugin (or `purchases_flutter` from RevenueCat) | Google Play Billing Library integration | ⬜ Not started |
+| 4.1 | **⚠️ REPLACE Stripe with Google Play Billing for in-app subscriptions** — Google Play policy REQUIRES Google Play's billing system for digital goods/subscriptions sold within the app. Stripe CANNOT be used for this. | [Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738) — violation = app rejection/removal | ✅ Done |
+| 4.2 | Integrate the [`in_app_purchase`](https://pub.dev/packages/in_app_purchase) Flutter plugin (or `purchases_flutter` from RevenueCat) | Google Play Billing Library integration | ✅ Done |
 | 4.3 | Create subscription products in **Google Play Console** (Monetization > Products > Subscriptions) | Required for Play Billing | ⬜ Not started |
 | 4.4 | Define subscription **base plans** (e.g., monthly, yearly) and **offers** (free trials, introductory pricing) | Play Console subscription config | ⬜ Not started |
 | 4.5 | Implement **server-side receipt validation** using [Google Play Developer API](https://developers.google.com/android-publisher) (Real-time Developer Notifications via Cloud Pub/Sub recommended) | Prevent fraud, manage subscription lifecycle | ⬜ Not started |
 | 4.6 | Handle **purchase acknowledgment** within 3 days or purchase is auto-refunded | Play Billing requirement | ⬜ Not started |
-| 4.7 | **Stripe can still be used for web subscriptions** — consider a hybrid approach: Play Billing on Android, Stripe on web/other platforms | Maximize flexibility | ⬜ Not started |
+| 4.7 | **Stripe can still be used for web subscriptions** — consider a hybrid approach: Play Billing on Android, Stripe on web/other platforms | Maximize flexibility | ✅ Done |
 | 4.8 | Google takes a **15% commission** (first $1M/year) or **30%** after that | Budget planning | ⬜ Not started |
 | 4.9 | Note: Some regions allow alternative billing (EEA under Digital Markets Act) — Google offers user-choice billing with reduced commission. Evaluate if applicable. | DMA compliance option | ⬜ Not started |
 
@@ -74,14 +74,14 @@
 
 | # | Task | Policy | Status |
 |---|------|--------|--------|
-| 5.1 | Create a **Privacy Policy** page hosted at a publicly accessible URL | Required for all apps; must be linked in store listing AND in-app | ⬜ Not started |
+| 5.1 | Create a **Privacy Policy** page hosted at a publicly accessible URL | Required for all apps; must be linked in store listing AND in-app | ✅ Done |
 | 5.2 | Complete the **Data Safety** section in Play Console — declare ALL data types collected, shared, and their purposes | Required since July 2022; incomplete = rejection | ⬜ Not started |
 | 5.3 | Declare data types: **Email address** (account), **Name** (profile), **Purchase history** (subscriptions), **App interactions** (swipe data, preferences), **Device ID** (analytics) | Must be accurate and complete | ⬜ Not started |
 | 5.4 | Declare if data is **encrypted in transit** (yes, if using HTTPS — which you should) | Data Safety form | ⬜ Not started |
 | 5.5 | Declare data **sharing** with third parties (analytics providers, crash reporting, etc.) | Must disclose all third-party data sharing | ⬜ Not started |
 | 5.6 | Declare if users can request **data deletion** (required if you collect personal data) | User Data policy + GDPR | ⬜ Not started |
 | 5.7 | If using Firebase Analytics, Crashlytics, etc. — declare their data collection | SDK data collection | ⬜ Not started |
-| 5.8 | Provide a **data deletion request** mechanism (URL or in-app) — required by Google Play as of Dec 2023 | [Account deletion requirement](https://support.google.com/googleplay/android-developer/answer/13327111) | ⬜ Not started |
+| 5.8 | Provide a **data deletion request** mechanism (URL or in-app) — required by Google Play as of Dec 2023 | [Account deletion requirement](https://support.google.com/googleplay/android-developer/answer/13327111) | ✅ Done |
 | 5.9 | If app collects location data, camera, microphone, etc. — provide **prominent disclosure** before collection | User Data policy | ⬜ Not started |
 
 ---
@@ -90,7 +90,7 @@
 
 | # | Task | Requirement | Status |
 |---|------|-------------|--------|
-| 6.1 | Write **Terms of Service** and host at a public URL | Best practice, strongly recommended | ⬜ Not started |
+| 6.1 | Write **Terms of Service** and host at a public URL | Best practice, strongly recommended | ✅ Done |
 | 6.2 | Complete **IARC content rating** questionnaire in Play Console | Required — app won't publish without it | ⬜ Not started |
 | 6.3 | BookSwipe will likely receive **Everyone** or **Everyone 10+** rating — answer questionnaire accurately | IARC | ⬜ Not started |
 | 6.4 | Comply with **GDPR** (EU users): consent for data processing, right to access/delete, DPO if needed | EU law | ⬜ Not started |
@@ -177,12 +177,12 @@
 
 | # | Task | Policy/Requirement | Status |
 |---|------|-------------------|--------|
-| 11.1 | Clearly display **subscription price, billing period, and description** before purchase | Subscriptions policy | ⬜ Not started |
-| 11.2 | Disclose that subscription **auto-renews** and explain how to cancel | Subscriptions policy | ⬜ Not started |
+| 11.1 | Clearly display **subscription price, billing period, and description** before purchase | Subscriptions policy | ✅ Done |
+| 11.2 | Disclose that subscription **auto-renews** and explain how to cancel | Subscriptions policy | ✅ Done |
 | 11.3 | Provide **free trial terms** clearly if offering one (duration, what happens after) | Subscriptions policy | ⬜ Not started |
 | 11.4 | Configure **grace period** (3, 7, 14, or 30 days) in Play Console — allows users to fix payment issues without losing access | Recommended; configurable per subscription | ⬜ Not started |
 | 11.5 | Configure **account hold** — pauses subscription when payment fails beyond grace period; user loses access but sub isn't cancelled | Recommended to reduce churn | ⬜ Not started |
-| 11.6 | Implement **restore purchases** — users must be able to restore subscriptions on new devices / reinstall | Required for good UX + policy | ⬜ Not started |
+| 11.6 | Implement **restore purchases** — users must be able to restore subscriptions on new devices / reinstall | Required for good UX + policy | ✅ Done |
 | 11.7 | Handle **subscription lifecycle events**: new purchase, renewal, cancellation, pause, hold, expiry | Backend integration with Play Developer API | ⬜ Not started |
 | 11.8 | Implement **Real-time Developer Notifications** (RTDN) via Google Cloud Pub/Sub for server-side subscription status updates | Best practice for reliable subscription management | ⬜ Not started |
 | 11.9 | Link to **Google Play subscription management** page (`https://play.google.com/store/account/subscriptions`) for easy cancellation | Recommended + reduces support burden | ⬜ Not started |

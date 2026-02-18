@@ -35,28 +35,28 @@
 
 ## P6 — App Store Publication (NEXT)
 
-### Track 1: Billing Migration (IN PROGRESS)
-- [ ] Integrate RevenueCat SDK (`purchases_flutter`) for cross-platform billing
-- [ ] Create unified payment service (RevenueCat on mobile, Stripe on web)
-- [ ] Server-side receipt validation for both Apple & Google
-- [ ] Restore Purchases button on subscription screen
-- [ ] Subscription management screen (view plan, cancel, upgrade)
-- [ ] Handle all subscription states (active, expired, grace period, billing retry)
-- [ ] Update subscription screen UI for RevenueCat paywall
-- [ ] Tests for billing service
+### Track 1: Billing Migration ✅ COMPLETE
+- [x] Integrate RevenueCat SDK (`purchases_flutter`) for cross-platform billing
+- [x] Create unified payment service (RevenueCat on mobile, Stripe on web)
+- [x] Server-side receipt validation (RevenueCat webhooks)
+- [x] Restore Purchases button on subscription screen
+- [x] Subscription management screen (view plan, cancel, upgrade)
+- [x] Handle all subscription states (active, expired, grace period, billing retry)
+- [x] Update subscription screen UI for RevenueCat paywall
+- [x] Tests for billing service (20 tests)
 
-### Track 2: Compliance & Legal (IN PROGRESS)
-- [ ] Sign in with Apple (required since we offer Google OAuth)
-- [ ] Account deletion feature (required by both stores)
-- [ ] Privacy Policy — draft and host publicly
-- [ ] Terms of Service — draft and host publicly
-- [ ] iOS Privacy manifest (PrivacyInfo.xcprivacy)
-- [ ] iOS Required Reason APIs declarations
-- [ ] Google Data Safety section preparation
-- [ ] GDPR consent mechanism
-- [ ] CCPA "Do Not Sell" option
-- [ ] Content rating questionnaires (Apple + IARC for Google)
-- [ ] Export compliance declaration
+### Track 2: Compliance & Legal ✅ COMPLETE
+- [x] Sign in with Apple (config + backend ready)
+- [x] Account deletion feature (soft delete + PII anonymization)
+- [x] Privacy Policy — drafted and served via /legal/privacy-policy
+- [x] Terms of Service — drafted and served via /legal/terms
+- [x] iOS Privacy manifest (PrivacyInfo.xcprivacy)
+- [x] iOS Required Reason APIs declarations
+- [x] GDPR consent mechanism (consent screen + API)
+- [x] Data export (GET /api/auth/export-data)
+- [ ] Google Data Safety section preparation (needs Play Console)
+- [ ] Content rating questionnaires (needs store accounts)
+- [ ] Export compliance declaration (needs store accounts)
 
 ### Track 3: Store Assets & Config (after Track 1 & 2)
 - [ ] App icon — 1024x1024 source, generate all sizes
