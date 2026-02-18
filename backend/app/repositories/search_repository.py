@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import datetime
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import BookList, BookListItem, SearchHistory, User, UserProfile
+from app.models import BookList, BookListItem, SearchHistory, User
 
 
 class SearchRepository:
@@ -55,9 +57,7 @@ class SearchRepository:
 
     def get_trending_searches(self, limit: int = 10, days: int = 7) -> list[tuple[str, int]]:
         """Return most popular search queries in the last N days."""
-        import datetime
-
-        cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+        cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=days)
         results = (
             self.db.query(SearchHistory.query, func.count(SearchHistory.id).label("cnt"))
             .filter(SearchHistory.created_at >= cutoff)
@@ -108,7 +108,6 @@ class SearchRepository:
 
     def get_autocomplete_suggestions(self, prefix: str, user_id: int, limit: int = 5) -> list[str]:
         """Return autocomplete suggestions from user's history and trending."""
-        # User's own recent matching searches
         user_results = (
             self.db.query(SearchHistory.query)
             .filter(
@@ -122,7 +121,6 @@ class SearchRepository:
         )
         suggestions = [r[0] for r in user_results]
 
-        # Fill with trending if needed
         if len(suggestions) < limit:
             remaining = limit - len(suggestions)
             trending = (

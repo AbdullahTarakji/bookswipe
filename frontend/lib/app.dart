@@ -18,6 +18,7 @@ import 'screens/notification_inbox_screen.dart';
 import 'screens/notification_preferences_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/search_screen.dart';
 import 'screens/social_profile_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/theme_settings_screen.dart';
@@ -151,6 +152,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/social/search',
         builder: (context, state) => const UserSearchScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/search',
+        builder: (context, state) => const SearchScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

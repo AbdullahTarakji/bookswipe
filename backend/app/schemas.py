@@ -637,3 +637,78 @@ class ReviewFlagRequest(BaseModel):
     """Admin request to flag a review."""
 
     reason: str = Field(..., min_length=1, max_length=500)
+
+
+# --- Search Feature Schemas ---
+
+
+class SearchFilters(BaseModel):
+    """Filters for book search."""
+    category: str | None = None
+    author: str | None = None
+    min_rating: float | None = None
+    year_from: int | None = None
+    year_to: int | None = None
+
+
+class BookSearchResult(BaseModel):
+    google_book_id: str
+    title: str
+    authors: list[str] = []
+    thumbnail: str = ""
+    categories: list[str] = []
+    average_rating: float | None = None
+    published_date: str | None = None
+
+
+class UserSearchResult(BaseModel):
+    user_id: int
+    username: str
+    avatar_url: str | None = None
+    bio: str = ""
+    is_following: bool = False
+
+
+class ListSearchResult(BaseModel):
+    id: int
+    name: str
+    description: str = ""
+    user_id: int
+    username: str = ""
+    item_count: int = 0
+    is_public: bool = True
+
+
+class UnifiedSearchResponse(BaseModel):
+    books: list[BookSearchResult] = []
+    users: list[UserSearchResult] = []
+    lists: list[ListSearchResult] = []
+    total_books: int = 0
+    total_users: int = 0
+    total_lists: int = 0
+
+
+class SearchHistoryItem(BaseModel):
+    id: int
+    query: str
+    search_type: str = "all"
+    created_at: datetime.datetime
+    model_config = {"from_attributes": True}
+
+
+class SearchHistoryResponse(BaseModel):
+    items: list[SearchHistoryItem]
+    total: int
+
+
+class AutocompleteResponse(BaseModel):
+    suggestions: list[str]
+
+
+class TrendingSearch(BaseModel):
+    query: str
+    count: int
+
+
+class TrendingSearchesResponse(BaseModel):
+    searches: list[TrendingSearch]

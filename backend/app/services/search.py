@@ -13,10 +13,6 @@ from app.schemas import (
     BookSearchResult,
     ListSearchResult,
     SearchFilters,
-    SearchHistoryItem,
-    SearchHistoryResponse,
-    TrendingSearch,
-    TrendingSearchesResponse,
     UnifiedSearchResponse,
     UserSearchResult,
 )
@@ -35,7 +31,6 @@ async def search_books_google(
     page_size: int = 10,
 ) -> tuple[list[BookSearchResult], int]:
     """Search Google Books API with optional filters."""
-    # Build query string
     q_parts = [query]
     if filters:
         if filters.category:
@@ -96,7 +91,6 @@ async def search_books_google(
             published_date=info.get("publishedDate"),
         )
 
-        # Apply post-filters
         if filters:
             if filters.min_rating and (book.average_rating or 0) < filters.min_rating:
                 continue
@@ -149,7 +143,7 @@ async def unified_search(
 
     if search_type in ("all", "users"):
         from app.repositories.social_repository import SocialRepository
-        # Use the same db session from repo
+
         social_repo = SocialRepository(repo.db)
         found_users, total_users = repo.search_users(query, page, page_size)
         following_ids = social_repo.get_following_ids(current_user_id)

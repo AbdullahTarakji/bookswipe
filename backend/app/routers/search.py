@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.exceptions import NotFoundError
 from app.models import User
 from app.repositories.search_repository import SearchRepository
 from app.schemas import (
@@ -120,7 +121,6 @@ def delete_search_history_item(
     repo = SearchRepository(db)
     deleted = repo.delete_history_item(current_user.id, item_id)
     if not deleted:
-        from app.exceptions import NotFoundError
         raise NotFoundError("Search history entry not found")
     return MessageResponse(message="Search history entry deleted")
 
@@ -135,7 +135,5 @@ def get_trending_searches(
     repo = SearchRepository(db)
     trending = repo.get_trending_searches(limit)
     return TrendingSearchesResponse(
-        searches=[
-            TrendingSearch(query=q, count=c) for q, c in trending
-        ]
+        searches=[TrendingSearch(query=q, count=c) for q, c in trending]
     )
