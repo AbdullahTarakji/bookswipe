@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/notification_providers.dart';
 import '../providers/providers.dart';
+import '../providers/subscription_provider.dart';
+import '../services/revenuecat_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -47,6 +49,9 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     final unreadCount = ref.watch(unreadNotificationCountProvider);
+    // On mobile, also check RevenueCat subscription state
+    final sub = ref.watch(subscriptionProvider);
+    final isPremium = user.isPremium || (isRevenueCatSupported && sub.isPremium);
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
-              if (user.isPremium)
+              if (isPremium)
                 Positioned(
                   bottom: 0,
                   right: MediaQuery.of(context).size.width / 2 - 70,
@@ -113,7 +118,7 @@ class ProfileScreen extends ConsumerWidget {
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          if (user.isPremium) ...[
+          if (isPremium) ...[
             const SizedBox(height: 4),
             Text(
               'Premium Member',
@@ -168,10 +173,10 @@ class ProfileScreen extends ConsumerWidget {
                 ListTile(
                   leading: Icon(
                     Icons.workspace_premium,
-                    color: user.isPremium ? Colors.amber : null,
+                    color: isPremium ? Colors.amber : null,
                   ),
                   title: const Text('Subscription'),
-                  subtitle: Text(user.isPremium ? 'Premium' : 'Free Plan'),
+                  subtitle: Text(isPremium ? 'Premium' : 'Free Plan'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/subscription'),
                 ),
