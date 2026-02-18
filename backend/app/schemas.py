@@ -393,6 +393,24 @@ class NotificationPreferenceUpdate(BaseModel):
     marketing: bool | None = None
 
 
+class EmailPreferenceResponse(BaseModel):
+    """Response schema for email notification preferences."""
+
+    email_welcome: bool = True
+    email_weekly_digest: bool = True
+    email_recommendations: bool = True
+
+    model_config = {"from_attributes": True}
+
+
+class EmailPreferenceUpdate(BaseModel):
+    """Request schema for updating email notification preferences."""
+
+    email_welcome: bool | None = None
+    email_weekly_digest: bool | None = None
+    email_recommendations: bool | None = None
+
+
 class NotificationResponse(BaseModel):
     """Response schema for a single notification."""
 

@@ -9,6 +9,8 @@ from app.workers.tasks import (
     process_all_covers,
     process_book_cover,
     send_queued_notification,
+    send_recommendation_alert_email,
+    send_weekly_digest_emails,
 )
 
 logger = logging.getLogger("bookswipe.worker")
@@ -31,6 +33,8 @@ class WorkerSettings:
         send_queued_notification,
         process_book_cover,
         process_all_covers,
+        send_recommendation_alert_email,
+        send_weekly_digest_emails,
     ]
 
     cron_jobs = [
@@ -46,6 +50,14 @@ class WorkerSettings:
             "coroutine": compute_all_preferences,
             "hour": None,  # every hour
             "minute": {30},
+            "unique": True,
+        })(),
+        # Send weekly digest emails every Monday at 09:00 UTC
+        type("CronJob", (), {
+            "coroutine": send_weekly_digest_emails,
+            "weekday": {0},  # Monday
+            "hour": {9},
+            "minute": {0},
             "unique": True,
         })(),
     ]
