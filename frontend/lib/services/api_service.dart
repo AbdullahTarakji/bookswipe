@@ -521,6 +521,76 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  // --- Search ---
+
+  /// Unified search across books, users, and lists.
+  Future<Map<String, dynamic>> unifiedSearch(
+    String query, {
+    String searchType = 'all',
+    String? category,
+    String? author,
+    double? minRating,
+    int? yearFrom,
+    int? yearTo,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final params = <String, dynamic>{
+      'q': query,
+      'search_type': searchType,
+      'page': page,
+      'page_size': pageSize,
+    };
+    if (category != null) params['category'] = category;
+    if (author != null) params['author'] = author;
+    if (minRating != null) params['min_rating'] = minRating;
+    if (yearFrom != null) params['year_from'] = yearFrom;
+    if (yearTo != null) params['year_to'] = yearTo;
+
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/search', queryParameters: params),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Get autocomplete suggestions.
+  Future<List<String>> getAutocompleteSuggestions(String query, {int limit = 5}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/search/autocomplete', queryParameters: {
+        'q': query,
+        'limit': limit,
+      }),
+    );
+    final data = response.data as Map<String, dynamic>;
+    return (data['suggestions'] as List<dynamic>).cast<String>();
+  }
+
+  /// Get search history.
+  Future<Map<String, dynamic>> getSearchHistory({int limit = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/search/history', queryParameters: {'limit': limit}),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Clear all search history.
+  Future<void> clearSearchHistory() async {
+    await _requestWithRetry(() => _dio.delete('/api/search/history'));
+  }
+
+  /// Delete a single search history item.
+  Future<void> deleteSearchHistoryItem(int itemId) async {
+    await _requestWithRetry(() => _dio.delete('/api/search/history/$itemId'));
+  }
+
+  /// Get trending searches.
+  Future<Map<String, dynamic>> getTrendingSearches({int limit = 10}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/search/trending', queryParameters: {'limit': limit}),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   // --- Book Lists ---
 
   /// Create a new book list.

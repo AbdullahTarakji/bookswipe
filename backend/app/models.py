@@ -331,6 +331,23 @@ class ActivityEvent(Base):
     user: Mapped[User] = relationship(back_populates="activity_events")
 
 
+class SearchHistory(Base):
+    """Stores a user's recent search queries for history and autocomplete."""
+
+    __tablename__ = "search_history"
+    __table_args__ = (
+        Index("ix_search_history_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    query: Mapped[str] = mapped_column(String(200), nullable=False)
+    search_type: Mapped[str] = mapped_column(String(20), nullable=False, default="all", server_default="all")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    user: Mapped[User] = relationship()
+
+
 SEED_CATEGORIES = [
     {"name": "Fiction", "google_category_key": "fiction"},
     {"name": "Romance", "google_category_key": "romance"},
