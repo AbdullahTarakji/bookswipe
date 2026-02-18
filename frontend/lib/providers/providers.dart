@@ -6,11 +6,17 @@ import '../models/category.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/share_service.dart';
 
 // --- Core Services ---
 
 /// Provides the singleton [ApiService] instance for HTTP communication.
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+/// Provides the [ShareService] for sharing books, lists, and profiles.
+final shareServiceProvider = Provider<ShareService>(
+  (ref) => ShareService(ref.read(apiServiceProvider)),
+);
 
 /// Provides the singleton [AuthService] instance for secure token storage.
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());

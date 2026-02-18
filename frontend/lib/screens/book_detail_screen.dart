@@ -50,6 +50,15 @@ class BookDetailScreen extends ConsumerWidget {
         SliverAppBar(
           expandedHeight: 350,
           pinned: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share',
+              onPressed: () {
+                ref.read(shareServiceProvider).shareBook(context, book.id);
+              },
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Hero(
               tag: 'book-cover-${book.id}',

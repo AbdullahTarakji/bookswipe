@@ -65,7 +65,18 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
     final items = (data['items'] as List<dynamic>?) ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        title: Text(name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share',
+            onPressed: () {
+              ref.read(shareServiceProvider).shareList(context, widget.listId);
+            },
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _loadList,
         child: items.isEmpty
