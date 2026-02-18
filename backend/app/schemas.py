@@ -1,9 +1,17 @@
 """Pydantic request/response schemas for the BookSwipe API."""
 
 import datetime
+import enum
 import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+class PlatformType(str, enum.Enum):
+    """Client platform for routing to the correct billing provider."""
+    WEB = "web"
+    IOS = "ios"
+    ANDROID = "android"
 
 # Common passwords (top subset for validation)
 COMMON_PASSWORDS = frozenset([

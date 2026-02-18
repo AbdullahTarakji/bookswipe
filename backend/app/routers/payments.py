@@ -1,9 +1,15 @@
-"""Payments router: Stripe checkout, webhooks, and subscription management."""
+"""Payments router: Stripe checkout (web), RevenueCat (mobile), webhooks, and subscription management.
+
+Platform routing:
+- Web clients use Stripe checkout sessions and billing portal.
+- Mobile clients (iOS/Android) use RevenueCat for in-app purchases;
+  subscription state is synced via RevenueCat webhooks.
+"""
 
 import datetime
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -16,7 +22,9 @@ from app.schemas import (
     SubscriptionResponse,
     SwipeLimitResponse,
 )
+from app.schemas import PlatformType
 from app.services.auth import get_current_user
+from app.services.revenuecat_service import check_premium_entitlement
 import stripe as stripe_lib
 from app.services.stripe_service import (
     cancel_subscription,
@@ -44,8 +52,18 @@ def _ensure_stripe_customer(user: User, db: Session) -> str:
 def create_checkout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    x_platform: str = Header(default="web", alias="X-Platform"),
 ):
-    """Create a Stripe checkout session for Premium subscription."""
+    """Create a Stripe checkout session for Premium subscription (web only).
+
+    Mobile clients should use RevenueCat SDK directly for purchases;
+    this endpoint is only for web-based Stripe checkout.
+    """
+    if x_platform in ("ios", "android"):
+        raise PaymentError(
+            "Mobile subscriptions are handled via in-app purchase. "
+            "Use the RevenueCat SDK in the app."
+        )
     if current_user.is_premium:
         raise PaymentError("You already have an active Premium subscription")
     if not settings.stripe_price_id:

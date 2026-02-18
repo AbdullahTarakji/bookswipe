@@ -1,4 +1,9 @@
-"""Stripe payment service for subscription management."""
+"""Stripe payment service for subscription management.
+
+NOTE: Stripe is now used for WEB-ONLY subscriptions. Mobile (iOS/Android)
+subscriptions are handled via RevenueCat and the App Store / Play Store.
+See revenuecat_service.py for the mobile billing implementation.
+"""
 
 import logging
 

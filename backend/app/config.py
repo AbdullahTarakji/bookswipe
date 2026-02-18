@@ -56,7 +56,11 @@ class Settings(BaseSettings):
     book_detail_cache_ttl: int = 86400  # 24 hours
     category_cache_ttl: int = 0  # 0 = permanent (no expiry)
 
-    # Stripe
+    # RevenueCat (mobile in-app subscriptions)
+    revenuecat_api_key: str = ""  # RevenueCat secret API key (sk_...)
+    revenuecat_webhook_secret: str = ""  # HMAC secret for webhook signature verification
+
+    # Stripe (web-only subscriptions)
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_id: str = ""
