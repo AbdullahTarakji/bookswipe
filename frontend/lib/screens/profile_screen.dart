@@ -158,6 +158,14 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.palette),
+                  title: const Text('Appearance'),
+                  subtitle: const Text('Light, dark, or system theme'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/theme'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: Icon(
                     Icons.workspace_premium,
                     color: user.isPremium ? Colors.amber : null,

@@ -575,3 +575,69 @@ class UserSearchResponse(BaseModel):
 
     users: list[FollowResponse]
     total: int
+
+
+# --- Reviews & Ratings ---
+
+
+class ReviewCreate(BaseModel):
+    """Request schema for creating or updating a book review."""
+
+    rating: int = Field(..., ge=1, le=5)
+    review_text: str = Field(default="", max_length=5000)
+
+    @field_validator("review_text")
+    @classmethod
+    def sanitize_review_text(cls, v: str) -> str:
+        return _sanitize_string(v)
+
+
+class ReviewUpdate(BaseModel):
+    """Request schema for updating a book review."""
+
+    rating: int | None = Field(None, ge=1, le=5)
+    review_text: str | None = Field(None, max_length=5000)
+
+    @field_validator("review_text")
+    @classmethod
+    def sanitize_review_text(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _sanitize_string(v)
+        return v
+
+
+class ReviewResponse(BaseModel):
+    """Response schema for a single book review."""
+
+    id: int
+    user_id: int
+    username: str = ""
+    google_book_id: str
+    rating: int
+    review_text: str = ""
+    is_flagged: bool = False
+    helpful_count: int = 0
+    user_has_voted: bool = False
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedReviews(BaseModel):
+    """Paginated response containing book reviews."""
+
+    reviews: list[ReviewResponse]
+    total: int
+    page: int
+    page_size: int
+    average_rating: float | None = None
+    total_ratings: int = 0
+
+
+class BookRatingStats(BaseModel):
+    """Aggregated rating statistics for a book."""
+
+    average_rating: float | None = None
+    total_ratings: int = 0
+    rating_distribution: dict[str, int] = {}

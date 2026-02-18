@@ -20,8 +20,10 @@ import 'screens/profile_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/social_profile_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/theme_settings_screen.dart';
 import 'screens/user_search_screen.dart';
 import 'providers/providers.dart';
+import 'providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -110,6 +112,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notifications/preferences',
         builder: (context, state) => const NotificationPreferencesScreen(),
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings/theme',
+        builder: (context, state) => const ThemeSettingsScreen(),
+      ),
       // Social routes
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -160,13 +167,14 @@ class BookSwipeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'BookSwipe',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
     );
   }
