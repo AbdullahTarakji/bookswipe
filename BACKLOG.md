@@ -32,3 +32,13 @@
 - [x] Staging deployment (docker-compose.staging.yml, deploy script, CI/CD, nginx SPA)
 - [x] Production deployment (deploy script, rollback, SSL/TLS, migrations, backup, CI/CD)
 - [x] Deployment documentation (docs/DEPLOYMENT.md)
+
+## P5 — Product Features v2 (IN PROGRESS)
+- [ ] US-30: Reading Lists & Collections (custom lists, CRUD, share, reorder)
+- [ ] US-31: User Reviews & Ratings (write/edit/delete reviews, star ratings, helpful votes)
+- [ ] US-32: Search Functionality (full-text search books, users, lists with filters & autocomplete)
+- [ ] US-33: Dark Mode (system-aware theme toggle, persistent preference)
+- [ ] US-34: Onboarding Flow (welcome screens, genre selection, tutorial, first swipe guidance)
+- [ ] US-35: Analytics Dashboard (user engagement, swipe stats, popular books, retention metrics)
+- [ ] US-36: Email Notifications (welcome email, weekly digest, recommendation alerts, transactional)
+- [ ] US-37: Book Sharing via Deep Links (share books/lists/profiles, OG meta tags, universal links)
