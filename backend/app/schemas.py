@@ -515,9 +515,16 @@ class BookListItemResponse(BaseModel):
     id: int
     book_id: str
     note: str = ""
+    position: int = 0
     added_at: datetime.datetime
 
     model_config = {"from_attributes": True}
+
+
+class BookListReorder(BaseModel):
+    """Request schema for reordering books in a list."""
+
+    book_ids: list[str] = Field(..., min_length=1)
 
 
 class BookListResponse(BaseModel):

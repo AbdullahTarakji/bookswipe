@@ -6,7 +6,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
 
-/// Displays a book list's items with add/remove functionality.
+/// Displays a book list's items with add/remove and reorder functionality.
 class BookListDetailScreen extends ConsumerStatefulWidget {
   final int listId;
 
@@ -20,6 +20,7 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
   Map<String, dynamic>? _listData;
   bool _loading = true;
   String? _error;
+  bool _reordering = false;
 
   @override
   void initState() {
@@ -39,6 +40,13 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  bool get _isOwner {
+    // Check if current user owns this list
+    final auth = ref.read(authStateProvider);
+    final userId = auth.valueOrNull?['id'];
+    return userId != null && _listData?['user_id'] == userId;
   }
 
   @override
@@ -62,10 +70,23 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
     final data = _listData!;
     final name = data['name'] as String? ?? '';
     final description = data['description'] as String? ?? '';
-    final items = (data['items'] as List<dynamic>?) ?? [];
+    final items = List<Map<String, dynamic>>.from(
+      (data['items'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>) ?? [],
+    );
+    final ownerUsername = data['owner_username'] as String? ?? '';
 
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        title: Text(name),
+        actions: [
+          if (_isOwner && items.length > 1)
+            IconButton(
+              icon: Icon(_reordering ? Icons.check : Icons.reorder),
+              onPressed: () => setState(() => _reordering = !_reordering),
+              tooltip: _reordering ? 'Done reordering' : 'Reorder',
+            ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _loadList,
         child: items.isEmpty
@@ -76,6 +97,11 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Text(description, style: theme.textTheme.bodyMedium),
                     ),
+                  if (!_isOwner && ownerUsername.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('by $ownerUsername', style: theme.textTheme.bodySmall),
+                    ),
                   const SizedBox(height: 60),
                   const EmptyState(
                     icon: Icons.menu_book,
@@ -84,27 +110,92 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
                   ),
                 ],
               )
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: items.length + (description.isNotEmpty ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (description.isNotEmpty && index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(description, style: theme.textTheme.bodyMedium),
-                    );
-                  }
-                  final itemIndex = description.isNotEmpty ? index - 1 : index;
-                  final item = items[itemIndex] as Map<String, dynamic>;
-                  return _BookListItemTile(
-                    item: item,
-                    listId: widget.listId,
-                    onRemoved: _loadList,
-                    theme: theme,
-                  );
-                },
-              ),
+            : _reordering
+                ? _buildReorderableList(items, description, theme)
+                : _buildItemList(items, description, ownerUsername, theme),
       ),
+    );
+  }
+
+  Widget _buildItemList(
+    List<Map<String, dynamic>> items,
+    String description,
+    String ownerUsername,
+    ThemeData theme,
+  ) {
+    final headerCount = (description.isNotEmpty ? 1 : 0) + (!_isOwner && ownerUsername.isNotEmpty ? 1 : 0);
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length + headerCount,
+      itemBuilder: (context, index) {
+        int offset = 0;
+        if (description.isNotEmpty && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(description, style: theme.textTheme.bodyMedium),
+          );
+        }
+        if (description.isNotEmpty) offset++;
+        if (!_isOwner && ownerUsername.isNotEmpty && index == offset) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('by $ownerUsername', style: theme.textTheme.bodySmall),
+          );
+        }
+        if (!_isOwner && ownerUsername.isNotEmpty) offset++;
+        final itemIndex = index - offset;
+        final item = items[itemIndex];
+        return _BookListItemTile(
+          item: item,
+          listId: widget.listId,
+          onRemoved: _loadList,
+          theme: theme,
+          canRemove: _isOwner,
+        );
+      },
+    );
+  }
+
+  Widget _buildReorderableList(
+    List<Map<String, dynamic>> items,
+    String description,
+    ThemeData theme,
+  ) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length,
+      onReorder: (oldIndex, newIndex) async {
+        if (newIndex > oldIndex) newIndex--;
+        setState(() {
+          final item = items.removeAt(oldIndex);
+          items.insert(newIndex, item);
+          _listData!['items'] = items;
+        });
+        // Persist new order
+        try {
+          final api = ref.read(apiServiceProvider);
+          final bookIds = items.map((i) => i['book_id'] as String).toList();
+          await api.reorderBookList(widget.listId, bookIds);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to reorder: $e')),
+            );
+            _loadList();
+          }
+        }
+      },
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final bookId = item['book_id'] as String? ?? '';
+        final note = item['note'] as String? ?? '';
+        return ListTile(
+          key: ValueKey(bookId),
+          leading: const Icon(Icons.drag_handle),
+          title: Text(bookId, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: note.isNotEmpty ? Text(note, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
+        );
+      },
     );
   }
 }
@@ -114,12 +205,14 @@ class _BookListItemTile extends ConsumerWidget {
   final int listId;
   final VoidCallback onRemoved;
   final ThemeData theme;
+  final bool canRemove;
 
   const _BookListItemTile({
     required this.item,
     required this.listId,
     required this.onRemoved,
     required this.theme,
+    this.canRemove = true,
   });
 
   @override
@@ -134,22 +227,24 @@ class _BookListItemTile extends ConsumerWidget {
       ),
       title: Text(bookId, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: note.isNotEmpty ? Text(note, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
-      trailing: IconButton(
-        icon: const Icon(Icons.remove_circle_outline),
-        onPressed: () async {
-          try {
-            final api = ref.read(apiServiceProvider);
-            await api.removeBookFromList(listId, bookId);
-            onRemoved();
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString())),
-              );
-            }
-          }
-        },
-      ),
+      trailing: canRemove
+          ? IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () async {
+                try {
+                  final api = ref.read(apiServiceProvider);
+                  await api.removeBookFromList(listId, bookId);
+                  onRemoved();
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString())),
+                    );
+                  }
+                }
+              },
+            )
+          : null,
       onTap: () => context.push('/book/$bookId'),
     );
   }

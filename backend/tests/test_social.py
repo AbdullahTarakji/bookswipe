@@ -288,3 +288,110 @@ def test_list_creation_creates_activity(client):
     resp = client.get("/api/social/feed", headers=headers)
     events = resp.json()["events"]
     assert any(e["event_type"] == "created_list" for e in events)
+
+
+# --- Reorder ---
+
+
+def test_reorder_books_in_list(client):
+    _, headers = _register(client)
+    resp = client.post("/api/book-lists", headers=headers, json={"name": "Ordered"})
+    list_id = resp.json()["id"]
+    # Add 3 books
+    for bid in ["book_a", "book_b", "book_c"]:
+        client.post(f"/api/book-lists/{list_id}/books", headers=headers, json={"book_id": bid})
+    # Check initial order (positions 0, 1, 2)
+    resp = client.get(f"/api/book-lists/{list_id}", headers=headers)
+    items = resp.json()["items"]
+    assert [i["book_id"] for i in items] == ["book_a", "book_b", "book_c"]
+    # Reorder: reverse
+    resp = client.put(f"/api/book-lists/{list_id}/reorder", headers=headers, json={
+        "book_ids": ["book_c", "book_b", "book_a"],
+    })
+    assert resp.status_code == 200
+    assert [i["book_id"] for i in resp.json()] == ["book_c", "book_b", "book_a"]
+    # Verify persisted
+    resp = client.get(f"/api/book-lists/{list_id}", headers=headers)
+    assert [i["book_id"] for i in resp.json()["items"]] == ["book_c", "book_b", "book_a"]
+
+
+def test_reorder_other_users_list_forbidden(client):
+    h1, h2 = _register_two(client)
+    resp = client.post("/api/book-lists", headers=h1, json={"name": "Alice's"})
+    list_id = resp.json()["id"]
+    resp = client.put(f"/api/book-lists/{list_id}/reorder", headers=h2, json={
+        "book_ids": ["x"],
+    })
+    assert resp.status_code == 403
+
+
+# --- Browse Public Lists ---
+
+
+def test_browse_public_lists(client):
+    h1, h2 = _register_two(client)
+    # Alice creates a public and a private list
+    client.post("/api/book-lists", headers=h1, json={"name": "Public One", "is_public": True})
+    client.post("/api/book-lists", headers=h1, json={"name": "Private One", "is_public": False})
+    # Bob browses public lists
+    resp = client.get("/api/book-lists/public/browse", headers=h2)
+    assert resp.status_code == 200
+    data = resp.json()
+    names = [l["name"] for l in data["lists"]]
+    assert "Public One" in names
+    assert "Private One" not in names
+
+
+def test_browse_public_lists_excludes_own(client):
+    h1, h2 = _register_two(client)
+    client.post("/api/book-lists", headers=h1, json={"name": "Alice Public"})
+    client.post("/api/book-lists", headers=h2, json={"name": "Bob Public"})
+    # Alice should not see her own lists in browse
+    resp = client.get("/api/book-lists/public/browse", headers=h1)
+    names = [l["name"] for l in resp.json()["lists"]]
+    assert "Alice Public" not in names
+    assert "Bob Public" in names
+
+
+# --- Position field ---
+
+
+def test_added_books_have_incremental_positions(client):
+    _, headers = _register(client)
+    resp = client.post("/api/book-lists", headers=headers, json={"name": "Pos Test"})
+    list_id = resp.json()["id"]
+    for bid in ["a", "b", "c"]:
+        resp = client.post(f"/api/book-lists/{list_id}/books", headers=headers, json={"book_id": bid})
+        assert "position" in resp.json()
+    resp = client.get(f"/api/book-lists/{list_id}", headers=headers)
+    positions = [i["position"] for i in resp.json()["items"]]
+    assert positions == [0, 1, 2]
+
+
+# --- Edge cases ---
+
+
+def test_create_list_empty_name_rejected(client):
+    _, headers = _register(client)
+    resp = client.post("/api/book-lists", headers=headers, json={"name": ""})
+    assert resp.status_code == 422
+
+
+def test_get_nonexistent_list(client):
+    _, headers = _register(client)
+    resp = client.get("/api/book-lists/99999", headers=headers)
+    assert resp.status_code == 404
+
+
+def test_delete_nonexistent_list(client):
+    _, headers = _register(client)
+    resp = client.delete("/api/book-lists/99999", headers=headers)
+    assert resp.status_code == 404
+
+
+def test_remove_nonexistent_book_from_list(client):
+    _, headers = _register(client)
+    resp = client.post("/api/book-lists", headers=headers, json={"name": "Test"})
+    list_id = resp.json()["id"]
+    resp = client.delete(f"/api/book-lists/{list_id}/books/nonexistent", headers=headers)
+    assert resp.status_code == 404

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/book.dart';
 import '../providers/providers.dart';
+import '../providers/social_providers.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/swipe_snackbar.dart';
@@ -94,6 +95,8 @@ class BookDetailScreen extends ConsumerWidget {
                 _buildMetadataRow(theme, book),
                 const SizedBox(height: 20),
                 _buildLikeButton(context, ref, book, isLiked),
+                const SizedBox(height: 8),
+                _buildAddToListButton(context, ref, book),
                 if (book.categories.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   Wrap(
@@ -206,6 +209,63 @@ class BookDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildAddToListButton(BuildContext context, WidgetRef ref, Book book) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _showAddToListDialog(context, ref, book.id),
+        icon: const Icon(Icons.playlist_add),
+        label: const Text('Add to List'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAddToListDialog(BuildContext context, WidgetRef ref, String bookId) async {
+    final listsAsync = ref.read(bookListsProvider);
+    final lists = listsAsync.valueOrNull ?? [];
+
+    if (lists.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Create a list first from the Book Lists screen')),
+      );
+      return;
+    }
+
+    final selectedListId = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Add to List'),
+        children: lists.map((list) {
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, list['id'] as int),
+            child: Text(list['name'] as String? ?? ''),
+          );
+        }).toList(),
+      ),
+    );
+
+    if (selectedListId != null && context.mounted) {
+      try {
+        final api = ref.read(apiServiceProvider);
+        await api.addBookToList(selectedListId, bookId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Book added to list')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {

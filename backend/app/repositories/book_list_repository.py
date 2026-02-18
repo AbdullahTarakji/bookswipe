@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import BookList, BookListItem
@@ -85,17 +86,36 @@ class BookListRepository:
         )
 
     def get_items(self, list_id: int) -> list[BookListItem]:
-        """Return all items in a book list."""
+        """Return all items in a book list ordered by position."""
         return (
             self.db.query(BookListItem)
             .filter(BookListItem.list_id == list_id)
-            .order_by(BookListItem.added_at.desc())
+            .order_by(BookListItem.position.asc(), BookListItem.added_at.desc())
             .all()
         )
 
+    def get_public_lists(self, page: int, page_size: int, exclude_user_id: int | None = None) -> tuple[list[BookList], int]:
+        """Return paginated public book lists, optionally excluding a user."""
+        query = self.db.query(BookList).filter(BookList.is_public.is_(True))
+        if exclude_user_id is not None:
+            query = query.filter(BookList.user_id != exclude_user_id)
+        total = query.count()
+        lists = (
+            query.order_by(BookList.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return lists, total
+
     def add_item(self, list_id: int, book_id: str, note: str = "") -> BookListItem:
-        """Add a book to a list."""
-        item = BookListItem(list_id=list_id, book_id=book_id, note=note)
+        """Add a book to a list at the end."""
+        max_pos = (
+            self.db.query(func.coalesce(func.max(BookListItem.position), -1))
+            .filter(BookListItem.list_id == list_id)
+            .scalar()
+        )
+        item = BookListItem(list_id=list_id, book_id=book_id, note=note, position=max_pos + 1)
         self.db.add(item)
         self.db.commit()
         self.db.refresh(item)
@@ -105,3 +125,13 @@ class BookListRepository:
         """Remove a book from a list."""
         self.db.delete(item)
         self.db.commit()
+
+    def reorder_items(self, list_id: int, book_ids: list[str]) -> list[BookListItem]:
+        """Reorder items in a list by setting positions based on the provided order."""
+        items = self.get_items(list_id)
+        item_map = {item.book_id: item for item in items}
+        for position, book_id in enumerate(book_ids):
+            if book_id in item_map:
+                item_map[book_id].position = position
+        self.db.commit()
+        return self.get_items(list_id)

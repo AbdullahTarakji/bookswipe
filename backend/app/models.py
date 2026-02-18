@@ -292,6 +292,7 @@ class BookListItem(Base):
     list_id: Mapped[int] = mapped_column(ForeignKey("book_lists.id", ondelete="CASCADE"), nullable=False, index=True)
     book_id: Mapped[str] = mapped_column(String(50), nullable=False)
     note: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     added_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     book_list: Mapped[BookList] = relationship(back_populates="items")
