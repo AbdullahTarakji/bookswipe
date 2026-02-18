@@ -4,6 +4,50 @@ import 'package:go_router/go_router.dart';
 import '../providers/notification_providers.dart';
 import '../providers/providers.dart';
 
+Future<void> _showDeleteAccountDialog(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete Account?'),
+      content: const Text(
+        'This will permanently delete your account and anonymize all your personal data, including:\n\n'
+        '• Your profile and email\n'
+        '• Liked books and reading lists\n'
+        '• Reviews and activity history\n'
+        '• Active subscriptions will be cancelled\n\n'
+        'This action cannot be undone.',
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete Account'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true && context.mounted) {
+    try {
+      final api = ref.read(apiServiceProvider);
+      await api.deleteMyAccount();
+      await ref.read(authStateProvider.notifier).logout();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete account. Please try again.')),
+        );
+      }
+    }
+  }
+}
+
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -178,6 +222,34 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privacy Settings'),
+                  subtitle: const Text('Analytics consent, data export'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/privacy'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: const Text('Privacy Policy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/legal/privacy-policy'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.gavel_outlined),
+                  title: const Text('Terms of Service'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/legal/terms'),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: () {
@@ -189,6 +261,12 @@ class ProfileScreen extends ConsumerWidget {
               foregroundColor: theme.colorScheme.error,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () => _showDeleteAccountDialog(context, ref),
+            icon: Icon(Icons.delete_forever, color: theme.colorScheme.error),
+            label: Text('Delete Account', style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),

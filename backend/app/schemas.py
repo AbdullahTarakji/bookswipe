@@ -730,3 +730,79 @@ class TrendingSearch(BaseModel):
 
 class TrendingSearchesResponse(BaseModel):
     searches: list[TrendingSearch]
+
+
+class CategoryBreakdown(BaseModel):
+    """Analytics: category distribution."""
+    categories: list[dict] = []
+    total: int = 0
+
+
+class DetailedAnalyticsResponse(BaseModel):
+    """Detailed analytics data."""
+    total_users: int = 0
+    total_swipes: int = 0
+    total_likes: int = 0
+    total_reviews: int = 0
+    period: str = "all"
+
+
+class EngagementMetrics(BaseModel):
+    """User engagement metrics."""
+    daily_active_users: int = 0
+    weekly_active_users: int = 0
+    monthly_active_users: int = 0
+    avg_session_duration: float = 0.0
+
+
+class PopularBooks(BaseModel):
+    """Most popular books analytics."""
+    books: list[dict] = []
+
+
+class RetentionData(BaseModel):
+    """User retention analytics."""
+    day1: float = 0.0
+    day7: float = 0.0
+    day30: float = 0.0
+
+
+class SwipeStats(BaseModel):
+    """Swipe event statistics."""
+    total: int = 0
+    likes: int = 0
+    skips: int = 0
+    like_rate: float = 0.0
+
+
+class BookListReorder(BaseModel):
+    """Request to reorder items in a book list."""
+    item_ids: list[int] = Field(..., description="Ordered list of item IDs")
+
+
+class OGMetadata(BaseModel):
+    """Open Graph metadata for social sharing."""
+    title: str = ""
+    description: str = ""
+    image: str = ""
+    url: str = ""
+
+
+class ShareResponse(BaseModel):
+    """Response for shareable content."""
+    url: str
+    title: str = ""
+    description: str = ""
+
+
+class PrivacyConsentUpdate(BaseModel):
+    """Request schema for updating privacy consent preferences."""
+    analytics_consent: bool = False
+    marketing_consent: bool = False
+
+
+class PrivacyConsentResponse(BaseModel):
+    """Response schema for privacy consent status."""
+    analytics_consent: bool
+    marketing_consent: bool
+    consent_date: str | None = None
