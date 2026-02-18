@@ -738,3 +738,69 @@ class TrendingSearch(BaseModel):
 
 class TrendingSearchesResponse(BaseModel):
     searches: list[TrendingSearch]
+
+
+# ── Share ────────────────────────────────────────────────────
+
+class OGMetadata(BaseModel):
+    og_title: str = ""
+    og_description: str = ""
+    og_image: str = ""
+    og_type: str = ""
+    og_url: str = ""
+
+
+class ShareResponse(BaseModel):
+    url: str
+    short_url: str
+    og: OGMetadata = OGMetadata()
+
+
+# ── Social (additional) ─────────────────────────────────────
+
+class BookListReorder(BaseModel):
+    item_ids: list[int]
+
+
+# ── Analytics (admin) ────────────────────────────────────────
+
+class CategoryCount(BaseModel):
+    category: str
+    count: int
+
+
+class CategoryBreakdown(BaseModel):
+    likes_by_category: list[CategoryCount] = []
+    most_active_categories: list[CategoryCount] = []
+
+
+class SwipeStats(BaseModel):
+    total_swipes: int = 0
+    likes: int = 0
+    skips: int = 0
+    like_rate: float = 0.0
+
+
+class PopularBooks(BaseModel):
+    most_liked: list[dict] = []
+    most_swiped: list[dict] = []
+
+
+class EngagementMetrics(BaseModel):
+    total_users: int = 0
+    active_users_today: int = 0
+    active_users_week: int = 0
+    avg_swipes_per_user: float = 0.0
+
+
+class RetentionData(BaseModel):
+    daily: list[dict] = []
+    weekly: list[dict] = []
+
+
+class DetailedAnalyticsResponse(BaseModel):
+    engagement: EngagementMetrics = EngagementMetrics()
+    swipes: SwipeStats = SwipeStats()
+    popular_books: PopularBooks = PopularBooks()
+    retention: RetentionData = RetentionData()
+    categories: CategoryBreakdown = CategoryBreakdown()

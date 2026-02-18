@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.config import settings
 from app.main import app
+from app.models import User
 from app.services.revenuecat_service import (
     EVENT_BILLING_ISSUE,
     EVENT_CANCELLATION,
@@ -28,13 +29,19 @@ client = TestClient(app)
 # ── Helper ───────────────────────────────────────────────────
 
 def _register_user(email: str = "rc@test.com") -> dict:
-    """Register a user and return the response JSON."""
+    """Register a user and return dict with 'access_token' and 'user_id'."""
     resp = client.post("/api/auth/register", json={
         "email": email,
         "password": VALID_TEST_PASSWORD,
     })
     assert resp.status_code == 201
-    return resp.json()
+    data = resp.json()
+    # Look up the user ID from the database
+    db = TestingSessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    data["id"] = user.id
+    db.close()
+    return data
 
 
 def _make_webhook_payload(event_type: str, app_user_id: str, **kwargs) -> dict:
@@ -142,7 +149,6 @@ class TestRevenueCatWebhookEndpoint:
 
         # Verify subscription is active
         db = TestingSessionLocal()
-        from app.models import User
         user = db.query(User).filter(User.id == int(user_id)).first()
         assert user.subscription_status == "active"
         assert user.subscription_plan == "premium"
@@ -161,7 +167,6 @@ class TestRevenueCatWebhookEndpoint:
             assert resp.status_code == 200
 
         db = TestingSessionLocal()
-        from app.models import User
         user = db.query(User).filter(User.id == int(user_id)).first()
         assert user.subscription_status == "cancelled"
         db.close()
@@ -176,7 +181,6 @@ class TestRevenueCatWebhookEndpoint:
             assert resp.status_code == 200
 
         db = TestingSessionLocal()
-        from app.models import User
         user = db.query(User).filter(User.id == int(user_id)).first()
         assert user.subscription_status == "free"
         assert user.subscription_plan == "free"
@@ -192,7 +196,6 @@ class TestRevenueCatWebhookEndpoint:
             assert resp.status_code == 200
 
         db = TestingSessionLocal()
-        from app.models import User
         user = db.query(User).filter(User.id == int(user_id)).first()
         assert user.subscription_status == "past_due"
         db.close()
@@ -237,7 +240,6 @@ class TestRevenueCatWebhookEndpoint:
             assert resp.status_code == 200
 
         db = TestingSessionLocal()
-        from app.models import User
         user = db.query(User).filter(User.id == int(user_id)).first()
         assert user.subscription_status == "active"
         assert user.subscription_plan == "premium"
