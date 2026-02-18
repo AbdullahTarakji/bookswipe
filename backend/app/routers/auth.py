@@ -72,6 +72,18 @@ def register(request: Request, body: UserRegister, db: Session = Depends(get_db)
     user = repo.create(email=body.email, hashed_password=hash_password(body.password))
     strength = check_password_strength(body.password)
     auth_attempts_total.labels(method="register", status="success").inc()
+
+    # Send welcome email (non-blocking — failure doesn't break registration)
+    try:
+        from app.services.email_service import send_email
+        from app.services.email_templates import render_welcome
+        from app.config import settings as app_settings
+
+        subject, html = render_welcome(user.email, app_url=app_settings.app_url)
+        send_email(user.email, subject, html)
+    except Exception:
+        logger.warning("Failed to send welcome email to %s", body.email)
+
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),

@@ -82,6 +82,131 @@ async def send_queued_notification(
         db.close()
 
 
+async def send_weekly_digest_emails(ctx: dict) -> int:
+    """Send weekly digest emails to all opted-in users.
+
+    Collects per-user stats (likes, skips this week), recommendations,
+    and popular books, then renders and sends the digest.
+    Returns the number of emails sent.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy import distinct, func
+
+    from app.config import settings
+    from app.database import SessionLocal
+    from app.models import LikedBook, NotificationPreference, SkippedBook, SwipeEvent, User
+    from app.services.email_service import send_email
+    from app.services.email_templates import render_weekly_digest
+
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    db = SessionLocal()
+    sent = 0
+    try:
+        # Get all active users
+        users = db.query(User).filter(User.is_active.is_(True), User.deleted_at.is_(None)).all()
+
+        # Popular books this week (most liked)
+        popular_rows = (
+            db.query(LikedBook.title, LikedBook.authors, func.count(LikedBook.id).label("cnt"))
+            .filter(LikedBook.liked_at >= one_week_ago)
+            .group_by(LikedBook.google_book_id)
+            .order_by(func.count(LikedBook.id).desc())
+            .limit(5)
+            .all()
+        )
+        popular_books = [{"title": r.title, "authors": r.authors} for r in popular_rows]
+
+        for user in users:
+            # Check email preference
+            pref = (
+                db.query(NotificationPreference)
+                .filter(NotificationPreference.user_id == user.id)
+                .first()
+            )
+            if pref and not pref.email_weekly_digest:
+                continue
+
+            # User stats for the week
+            likes = (
+                db.query(func.count(SwipeEvent.id))
+                .filter(
+                    SwipeEvent.user_id == user.id,
+                    SwipeEvent.action == "like",
+                    SwipeEvent.created_at >= one_week_ago,
+                )
+                .scalar() or 0
+            )
+            skips = (
+                db.query(func.count(SwipeEvent.id))
+                .filter(
+                    SwipeEvent.user_id == user.id,
+                    SwipeEvent.action == "skip",
+                    SwipeEvent.created_at >= one_week_ago,
+                )
+                .scalar() or 0
+            )
+            stats = {"likes": likes, "skips": skips, "total_swipes": likes + skips}
+
+            # Recent liked books as "recommendations" placeholder
+            recent_likes = (
+                db.query(LikedBook)
+                .filter(LikedBook.user_id == user.id)
+                .order_by(LikedBook.liked_at.desc())
+                .limit(5)
+                .all()
+            )
+            recs = [{"title": b.title, "authors": b.authors} for b in recent_likes]
+
+            subject, html = render_weekly_digest(
+                user.email, stats, recs, popular_books, app_url=settings.app_url
+            )
+            if send_email(user.email, subject, html):
+                sent += 1
+
+        logger.info("send_weekly_digest_emails sent %d emails", sent)
+        return sent
+    finally:
+        db.close()
+
+
+async def send_recommendation_alert_email(
+    ctx: dict, user_id: int, books: list[dict]
+) -> bool:
+    """Send a recommendation alert email to a user.
+
+    books: list of dicts with keys 'title' and 'authors'.
+    Returns True if sent.
+    """
+    from app.config import settings
+    from app.database import SessionLocal
+    from app.models import NotificationPreference, User
+    from app.services.email_service import send_email
+    from app.services.email_templates import render_recommendation_alert
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+
+        pref = (
+            db.query(NotificationPreference)
+            .filter(NotificationPreference.user_id == user_id)
+            .first()
+        )
+        if pref and not pref.email_recommendations:
+            return False
+
+        subject, html = render_recommendation_alert(books, app_url=settings.app_url)
+        result = send_email(user.email, subject, html)
+        if result:
+            logger.info("Recommendation alert email sent to user %d", user_id)
+        return result
+    finally:
+        db.close()
+
+
 async def process_book_cover(ctx: dict, book_id: str) -> bool:
     """Fetch, resize, and upload cover images for a single book.
 

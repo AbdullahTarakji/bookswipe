@@ -11,6 +11,8 @@ from app.repositories.notification_repository import NotificationRepository
 from app.schemas import (
     DeviceTokenRegister,
     DeviceTokenUnregister,
+    EmailPreferenceResponse,
+    EmailPreferenceUpdate,
     MessageResponse,
     NotificationPreferenceResponse,
     NotificationPreferenceUpdate,
@@ -73,6 +75,36 @@ def update_preferences(
         marketing=body.marketing,
     )
     return NotificationPreferenceResponse.model_validate(prefs)
+
+
+@router.get("/email-preferences", response_model=EmailPreferenceResponse)
+def get_email_preferences(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> EmailPreferenceResponse:
+    """Return the current user's email notification preferences."""
+    repo = NotificationRepository(db)
+    prefs = repo.get_email_preferences(current_user.id)
+    if prefs is None:
+        return EmailPreferenceResponse()
+    return EmailPreferenceResponse.model_validate(prefs)
+
+
+@router.put("/email-preferences", response_model=EmailPreferenceResponse)
+def update_email_preferences(
+    body: EmailPreferenceUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> EmailPreferenceResponse:
+    """Update the current user's email notification preferences."""
+    repo = NotificationRepository(db)
+    prefs = repo.upsert_email_preferences(
+        current_user.id,
+        email_welcome=body.email_welcome,
+        email_weekly_digest=body.email_weekly_digest,
+        email_recommendations=body.email_recommendations,
+    )
+    return EmailPreferenceResponse.model_validate(prefs)
 
 
 @router.get("/history", response_model=PaginatedNotifications)

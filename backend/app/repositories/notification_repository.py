@@ -84,6 +84,41 @@ class NotificationRepository:
         self.db.refresh(pref)
         return pref
 
+    # ── Email Preferences ─────────────────────────────────────
+
+    def get_email_preferences(self, user_id: int) -> NotificationPreference | None:
+        """Return email preferences (same row as push prefs)."""
+        return self.get_preferences(user_id)
+
+    def upsert_email_preferences(
+        self,
+        user_id: int,
+        *,
+        email_welcome: bool | None = None,
+        email_weekly_digest: bool | None = None,
+        email_recommendations: bool | None = None,
+    ) -> NotificationPreference:
+        """Create or update email notification preferences."""
+        pref = self.get_preferences(user_id)
+        if pref is None:
+            pref = NotificationPreference(
+                user_id=user_id,
+                email_welcome=email_welcome if email_welcome is not None else True,
+                email_weekly_digest=email_weekly_digest if email_weekly_digest is not None else True,
+                email_recommendations=email_recommendations if email_recommendations is not None else True,
+            )
+            self.db.add(pref)
+        else:
+            if email_welcome is not None:
+                pref.email_welcome = email_welcome
+            if email_weekly_digest is not None:
+                pref.email_weekly_digest = email_weekly_digest
+            if email_recommendations is not None:
+                pref.email_recommendations = email_recommendations
+        self.db.commit()
+        self.db.refresh(pref)
+        return pref
+
     # ── Notifications (History) ──────────────────────────────
 
     def create_notification(

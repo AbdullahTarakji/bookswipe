@@ -202,6 +202,11 @@ class NotificationPreference(Base):
     social: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
     marketing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
 
+    # Email notification preferences
+    email_welcome: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    email_weekly_digest: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+    email_recommendations: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+
     user: Mapped["User"] = relationship(back_populates="notification_preference")
 
 

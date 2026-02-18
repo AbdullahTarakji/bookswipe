@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     s3_secret_key: str = ""
     s3_public_url: str = ""  # public-facing base URL for cover images
 
+    # Email / SMTP
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    from_email: str = "noreply@bookswipe.app"
+    app_url: str = "https://bookswipe.app"
+
     # Admin seeding
     admin_email: str = ""
     admin_password: str = ""
