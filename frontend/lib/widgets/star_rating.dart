@@ -1,82 +1,45 @@
 import 'package:flutter/material.dart';
 
-/// Interactive star rating widget.
+/// Interactive or read-only star rating widget.
 class StarRating extends StatelessWidget {
-  final int rating;
-  final int maxRating;
+  final double rating;
   final double size;
   final bool interactive;
   final ValueChanged<int>? onChanged;
+  final Color? color;
 
   const StarRating({
     super.key,
     required this.rating,
-    this.maxRating = 5,
-    this.size = 28,
+    this.size = 24,
     this.interactive = false,
     this.onChanged,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final starColor = color ?? Theme.of(context).colorScheme.primary;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(maxRating, (index) {
-        final starIndex = index + 1;
-        return GestureDetector(
-          onTap: interactive ? () => onChanged?.call(starIndex) : null,
-          child: Icon(
-            starIndex <= rating ? Icons.star : Icons.star_border,
-            color: const Color(0xFFFFC107),
-            size: size,
-          ),
-        );
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+        IconData icon;
+        if (rating >= starValue) {
+          icon = Icons.star;
+        } else if (rating >= starValue - 0.5) {
+          icon = Icons.star_half;
+        } else {
+          icon = Icons.star_border;
+        }
+        if (interactive) {
+          return GestureDetector(
+            onTap: () => onChanged?.call(starValue),
+            child: Icon(icon, size: size, color: starColor),
+          );
+        }
+        return Icon(icon, size: size, color: starColor);
       }),
-    );
-  }
-}
-
-/// Displays an average rating as filled/half/empty stars.
-class AverageStarRating extends StatelessWidget {
-  final double rating;
-  final int totalRatings;
-  final double size;
-
-  const AverageStarRating({
-    super.key,
-    required this.rating,
-    this.totalRatings = 0,
-    this.size = 18,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ...List.generate(5, (index) {
-          final starIndex = index + 1;
-          if (rating >= starIndex) {
-            return Icon(Icons.star, color: const Color(0xFFFFC107), size: size);
-          } else if (rating >= starIndex - 0.5) {
-            return Icon(Icons.star_half, color: const Color(0xFFFFC107), size: size);
-          } else {
-            return Icon(Icons.star_border, color: const Color(0xFFFFC107), size: size);
-          }
-        }),
-        const SizedBox(width: 4),
-        Text(
-          rating.toStringAsFixed(1),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        if (totalRatings > 0) ...[
-          const SizedBox(width: 4),
-          Text(
-            '($totalRatings)',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ],
     );
   }
 }

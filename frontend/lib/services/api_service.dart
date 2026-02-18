@@ -644,7 +644,45 @@ class ApiService {
       if (statusCode == 401) return 'Please log in to continue';
       if (statusCode == 403) return 'You don\'t have permission to do this';
       if (statusCode == 404) return 'Resource not found';
-      if (statusCode == 422) return 'Invalid data provided';
+      // --- Reviews & Ratings ---
+
+  Future<Map<String, dynamic>> getBookReviews(String bookId, {int page = 1, int pageSize = 20, String sort = 'newest'}) async {
+    final resp = await _retryRequest(() => _dio.get(
+      '/api/books/$bookId/reviews',
+      queryParameters: {'page': page, 'page_size': pageSize, 'sort': sort},
+    ));
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createOrUpdateReview(String bookId, {required int rating, String reviewText = ''}) async {
+    final resp = await _retryRequest(() => _dio.post(
+      '/api/books/$bookId/reviews',
+      data: {'rating': rating, 'review_text': reviewText},
+    ));
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateReview(int reviewId, {int? rating, String? reviewText}) async {
+    final data = <String, dynamic>{};
+    if (rating != null) data['rating'] = rating;
+    if (reviewText != null) data['review_text'] = reviewText;
+    final resp = await _retryRequest(() => _dio.put('/api/reviews/$reviewId', data: data));
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<void> deleteReview(int reviewId) async {
+    await _retryRequest(() => _dio.delete('/api/reviews/$reviewId'));
+  }
+
+  Future<void> voteReviewHelpful(int reviewId) async {
+    await _retryRequest(() => _dio.post('/api/reviews/$reviewId/helpful'));
+  }
+
+  Future<void> removeReviewVote(int reviewId) async {
+    await _retryRequest(() => _dio.delete('/api/reviews/$reviewId/helpful'));
+  }
+
+  if (statusCode == 422) return 'Invalid data provided';
       if (statusCode == 429) return 'Too many requests. Please wait a moment';
       if (statusCode != null && statusCode >= 500) {
         return 'Server error. Please try again later';

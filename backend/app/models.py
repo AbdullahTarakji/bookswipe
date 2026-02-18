@@ -291,11 +291,7 @@ class BookListItem(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     list_id: Mapped[int] = mapped_column(ForeignKey("book_lists.id", ondelete="CASCADE"), nullable=False, index=True)
     book_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    title: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
-    authors: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
-    thumbnail: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
     note: Mapped[str] = mapped_column(String(500), nullable=False, default="", server_default="")
-    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     added_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     book_list: Mapped[BookList] = relationship(back_populates="items")
@@ -342,28 +338,28 @@ class BookReview(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "google_book_id", name="uq_user_book_review"),
         Index("ix_book_reviews_book_id", "google_book_id"),
-        Index("ix_book_reviews_user_id", "user_id"),
         Index("ix_book_reviews_created_at", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     google_book_id: Mapped[str] = mapped_column(String(50), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
     review_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
     is_flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    flagged_reason: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
     helpful_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    user: Mapped[User] = relationship()
+    user: Mapped[User] = relationship(foreign_keys=[user_id])
     votes: Mapped[list["ReviewVote"]] = relationship(back_populates="review", cascade="all, delete-orphan")
 
 
 class ReviewVote(Base):
-    """A 'helpful' vote on a book review. One vote per user per review."""
+    """A 'helpful' vote on a book review (one per user per review)."""
 
     __tablename__ = "review_votes"
     __table_args__ = (

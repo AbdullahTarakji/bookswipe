@@ -1,4 +1,4 @@
-"""Reviews router: book reviews, ratings, helpful votes, and moderation."""
+"""Reviews router: book reviews, ratings, helpful votes, and admin moderation."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from app.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.models import User
 from app.repositories.review_repository import ReviewRepository
 from app.schemas import (
-    BookRatingStats,
     MessageResponse,
     PaginatedReviews,
     ReviewCreate,
+    ReviewFlagRequest,
     ReviewResponse,
     ReviewUpdate,
 )
@@ -23,13 +23,10 @@ router = APIRouter(prefix="/api", tags=["reviews"])
 
 
 def _username_from_user(user: User) -> str:
-    """Derive display name from user email."""
     return user.email.split("@")[0]
 
 
-def _build_review_response(
-    review, username: str = "", user_has_voted: bool = False
-) -> ReviewResponse:
+def _build_review_response(review, username: str = "", user_has_voted: bool = False) -> ReviewResponse:
     return ReviewResponse(
         id=review.id,
         user_id=review.user_id,
@@ -45,57 +42,58 @@ def _build_review_response(
     )
 
 
-# --- Reviews CRUD ---
+# --- Create / Upsert Review ---
 
 
-@router.post(
-    "/books/{google_book_id}/reviews",
-    response_model=ReviewResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/books/{book_id}/reviews", response_model=ReviewResponse, status_code=status.HTTP_201_CREATED)
 def create_or_update_review(
-    google_book_id: str,
+    book_id: str,
     body: ReviewCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create or update a review for a book (upsert)."""
+    """Create or update a review for a book (upsert: one review per user per book)."""
     repo = ReviewRepository(db)
-    existing = repo.get_user_review(current_user.id, google_book_id)
+    existing = repo.get_user_review(current_user.id, book_id)
     if existing:
         review = repo.update_review(existing, rating=body.rating, review_text=body.review_text)
     else:
-        review = repo.create_review(
-            user_id=current_user.id,
-            google_book_id=google_book_id,
-            rating=body.rating,
-            review_text=body.review_text,
-        )
-    return _build_review_response(review, username=_username_from_user(current_user))
+        review = repo.create_review(current_user.id, book_id, body.rating, body.review_text)
+    return _build_review_response(review, _username_from_user(current_user))
 
 
-@router.get("/books/{google_book_id}/reviews", response_model=PaginatedReviews)
+# --- Get Reviews for a Book ---
+
+
+@router.get("/books/{book_id}/reviews", response_model=PaginatedReviews)
 def get_book_reviews(
-    google_book_id: str,
+    book_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50),
-    sort_by: str = Query("newest", pattern=r"^(newest|helpful)$"),
+    sort: str = Query("newest", pattern="^(newest|helpful)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Return paginated reviews for a book."""
+    """Return paginated reviews for a book, sorted by newest or most helpful."""
     repo = ReviewRepository(db)
-    reviews, total = repo.get_book_reviews(google_book_id, page, page_size, sort_by)
-    avg_rating, total_ratings = repo.get_average_rating(google_book_id)
+    reviews, total = repo.get_reviews_for_book(book_id, page, page_size, sort=sort)
+    avg_rating, total_ratings = repo.get_average_rating(book_id)
 
     review_ids = [r.id for r in reviews]
     voted_ids = repo.get_user_voted_review_ids(current_user.id, review_ids)
+
+    # Resolve usernames
+    user_map: dict[int, str] = {}
+    for review in reviews:
+        if review.user_id not in user_map:
+            user = db.query(User).filter(User.id == review.user_id).first()
+            user_map[review.user_id] = _username_from_user(user) if user else ""
 
     return PaginatedReviews(
         reviews=[
             _build_review_response(
                 r,
-                username=_username_from_user(r.user) if r.user else "",
+                username=user_map.get(r.user_id, ""),
                 user_has_voted=r.id in voted_ids,
             )
             for r in reviews
@@ -108,6 +106,9 @@ def get_book_reviews(
     )
 
 
+# --- Update Own Review ---
+
+
 @router.put("/reviews/{review_id}", response_model=ReviewResponse)
 def update_review(
     review_id: int,
@@ -115,7 +116,7 @@ def update_review(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update own review."""
+    """Update the authenticated user's review."""
     repo = ReviewRepository(db)
     review = repo.get_review(review_id)
     if not review:
@@ -125,7 +126,10 @@ def update_review(
     update_data = body.model_dump(exclude_unset=True)
     if update_data:
         review = repo.update_review(review, **update_data)
-    return _build_review_response(review, username=_username_from_user(current_user))
+    return _build_review_response(review, _username_from_user(current_user))
+
+
+# --- Delete Own Review ---
 
 
 @router.delete("/reviews/{review_id}", response_model=MessageResponse)
@@ -134,7 +138,7 @@ def delete_review(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Delete own review (or admin can delete any)."""
+    """Delete the authenticated user's review."""
     repo = ReviewRepository(db)
     review = repo.get_review(review_id)
     if not review:
@@ -145,35 +149,16 @@ def delete_review(
     return MessageResponse(message="Review deleted")
 
 
-# --- Rating Stats ---
+# --- Helpful Vote ---
 
 
-@router.get("/books/{google_book_id}/ratings", response_model=BookRatingStats)
-def get_book_ratings(
-    google_book_id: str,
-    db: Session = Depends(get_db),
-):
-    """Return aggregated rating stats for a book (public)."""
-    repo = ReviewRepository(db)
-    avg_rating, total_ratings = repo.get_average_rating(google_book_id)
-    distribution = repo.get_rating_distribution(google_book_id)
-    return BookRatingStats(
-        average_rating=avg_rating,
-        total_ratings=total_ratings,
-        rating_distribution=distribution,
-    )
-
-
-# --- Helpful Votes ---
-
-
-@router.post("/reviews/{review_id}/vote", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/reviews/{review_id}/helpful", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 def vote_helpful(
     review_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Vote a review as helpful."""
+    """Mark a review as helpful (one vote per user per review)."""
     repo = ReviewRepository(db)
     review = repo.get_review(review_id)
     if not review:
@@ -187,13 +172,13 @@ def vote_helpful(
     return MessageResponse(message="Vote recorded")
 
 
-@router.delete("/reviews/{review_id}/vote", response_model=MessageResponse)
-def remove_vote(
+@router.delete("/reviews/{review_id}/helpful", response_model=MessageResponse)
+def remove_helpful_vote(
     review_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Remove helpful vote from a review."""
+    """Remove a helpful vote from a review."""
     repo = ReviewRepository(db)
     vote = repo.get_vote(current_user.id, review_id)
     if not vote:
@@ -208,32 +193,50 @@ def remove_vote(
 @router.post("/admin/reviews/{review_id}/flag", response_model=ReviewResponse)
 def flag_review(
     review_id: int,
+    body: ReviewFlagRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Flag a review (admin only)."""
+    """Admin: flag a review for moderation."""
     if current_user.role != "admin":
         raise ForbiddenError("Admin access required")
     repo = ReviewRepository(db)
     review = repo.get_review(review_id)
     if not review:
         raise NotFoundError("Review not found")
-    review = repo.flag_review(review, flagged=True)
-    return _build_review_response(review, username=_username_from_user(review.user) if review.user else "")
+    review = repo.flag_review(review, body.reason)
+    return _build_review_response(review)
 
 
-@router.post("/admin/reviews/{review_id}/unflag", response_model=ReviewResponse)
+@router.delete("/admin/reviews/{review_id}/flag", response_model=ReviewResponse)
 def unflag_review(
     review_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Unflag a review (admin only)."""
+    """Admin: remove flag from a review."""
     if current_user.role != "admin":
         raise ForbiddenError("Admin access required")
     repo = ReviewRepository(db)
     review = repo.get_review(review_id)
     if not review:
         raise NotFoundError("Review not found")
-    review = repo.flag_review(review, flagged=False)
-    return _build_review_response(review, username=_username_from_user(review.user) if review.user else "")
+    review = repo.unflag_review(review)
+    return _build_review_response(review)
+
+
+@router.delete("/admin/reviews/{review_id}", response_model=MessageResponse)
+def admin_delete_review(
+    review_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Admin: delete any review."""
+    if current_user.role != "admin":
+        raise ForbiddenError("Admin access required")
+    repo = ReviewRepository(db)
+    review = repo.get_review(review_id)
+    if not review:
+        raise NotFoundError("Review not found")
+    repo.delete_review(review)
+    return MessageResponse(message="Review deleted by admin")

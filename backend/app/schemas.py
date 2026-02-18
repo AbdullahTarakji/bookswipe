@@ -515,16 +515,9 @@ class BookListItemResponse(BaseModel):
     id: int
     book_id: str
     note: str = ""
-    position: int = 0
     added_at: datetime.datetime
 
     model_config = {"from_attributes": True}
-
-
-class BookListReorder(BaseModel):
-    """Request schema for reordering books in a list."""
-
-    book_ids: list[str] = Field(..., min_length=1)
 
 
 class BookListResponse(BaseModel):
@@ -538,15 +531,8 @@ class BookListResponse(BaseModel):
     created_at: datetime.datetime
     item_count: int = 0
     owner_username: str = ""
-    cover_thumbnails: list[str] = []
 
     model_config = {"from_attributes": True}
-
-
-class BookListReorder(BaseModel):
-    """Request schema for reordering books in a list."""
-
-    book_ids: list[str] = Field(..., min_length=1)
 
 
 class BookListDetailResponse(BookListResponse):
@@ -595,10 +581,10 @@ class UserSearchResponse(BaseModel):
 
 
 class ReviewCreate(BaseModel):
-    """Request schema for creating or updating a book review."""
+    """Request schema for creating/updating a book review."""
 
     rating: int = Field(..., ge=1, le=5)
-    review_text: str = Field(default="", max_length=5000)
+    review_text: str = Field("", max_length=5000)
 
     @field_validator("review_text")
     @classmethod
@@ -621,25 +607,23 @@ class ReviewUpdate(BaseModel):
 
 
 class ReviewResponse(BaseModel):
-    """Response schema for a single book review."""
+    """Response schema for a book review."""
 
     id: int
     user_id: int
     username: str = ""
     google_book_id: str
     rating: int
-    review_text: str = ""
+    review_text: str
     is_flagged: bool = False
     helpful_count: int = 0
     user_has_voted: bool = False
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
-    model_config = {"from_attributes": True}
-
 
 class PaginatedReviews(BaseModel):
-    """Paginated response containing book reviews."""
+    """Paginated response for book reviews."""
 
     reviews: list[ReviewResponse]
     total: int
@@ -649,9 +633,7 @@ class PaginatedReviews(BaseModel):
     total_ratings: int = 0
 
 
-class BookRatingStats(BaseModel):
-    """Aggregated rating statistics for a book."""
+class ReviewFlagRequest(BaseModel):
+    """Admin request to flag a review."""
 
-    average_rating: float | None = None
-    total_ratings: int = 0
-    rating_distribution: dict[str, int] = {}
+    reason: str = Field(..., min_length=1, max_length=500)

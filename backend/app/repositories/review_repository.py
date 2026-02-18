@@ -17,11 +17,9 @@ class ReviewRepository:
     # --- Reviews ---
 
     def get_review(self, review_id: int) -> BookReview | None:
-        """Return a review by ID."""
         return self.db.query(BookReview).filter(BookReview.id == review_id).first()
 
     def get_user_review(self, user_id: int, google_book_id: str) -> BookReview | None:
-        """Return a user's review for a specific book."""
         return (
             self.db.query(BookReview)
             .filter(BookReview.user_id == user_id, BookReview.google_book_id == google_book_id)
@@ -29,7 +27,6 @@ class ReviewRepository:
         )
 
     def create_review(self, user_id: int, google_book_id: str, rating: int, review_text: str = "") -> BookReview:
-        """Create a new review."""
         review = BookReview(
             user_id=user_id,
             google_book_id=google_book_id,
@@ -42,7 +39,6 @@ class ReviewRepository:
         return review
 
     def update_review(self, review: BookReview, **kwargs: object) -> BookReview:
-        """Update review fields."""
         for key, value in kwargs.items():
             if value is not None:
                 setattr(review, key, value)
@@ -51,34 +47,29 @@ class ReviewRepository:
         return review
 
     def delete_review(self, review: BookReview) -> None:
-        """Delete a review."""
         self.db.delete(review)
         self.db.commit()
 
-    def get_book_reviews(
+    def get_reviews_for_book(
         self,
         google_book_id: str,
         page: int,
         page_size: int,
-        sort_by: str = "newest",
+        sort: str = "newest",
+        include_flagged: bool = False,
     ) -> tuple[list[BookReview], int]:
-        """Return paginated reviews for a book."""
-        query = self.db.query(BookReview).filter(
-            BookReview.google_book_id == google_book_id,
-            BookReview.is_flagged.is_(False),
-        )
+        query = self.db.query(BookReview).filter(BookReview.google_book_id == google_book_id)
+        if not include_flagged:
+            query = query.filter(BookReview.is_flagged.is_(False))
         total = query.count()
-
-        if sort_by == "helpful":
+        if sort == "helpful":
             query = query.order_by(BookReview.helpful_count.desc(), BookReview.created_at.desc())
         else:
             query = query.order_by(BookReview.created_at.desc())
-
         reviews = query.offset((page - 1) * page_size).limit(page_size).all()
         return reviews, total
 
     def get_average_rating(self, google_book_id: str) -> tuple[float | None, int]:
-        """Return (average_rating, total_ratings) for a book."""
         result = (
             self.db.query(
                 func.avg(BookReview.rating),
@@ -87,24 +78,13 @@ class ReviewRepository:
             .filter(BookReview.google_book_id == google_book_id, BookReview.is_flagged.is_(False))
             .first()
         )
-        avg_rating = round(float(result[0]), 2) if result[0] else None
+        avg_rating = round(float(result[0]), 2) if result[0] is not None else None
         total = result[1] or 0
         return avg_rating, total
-
-    def get_rating_distribution(self, google_book_id: str) -> dict[str, int]:
-        """Return rating distribution {1: count, 2: count, ...}."""
-        rows = (
-            self.db.query(BookReview.rating, func.count(BookReview.id))
-            .filter(BookReview.google_book_id == google_book_id, BookReview.is_flagged.is_(False))
-            .group_by(BookReview.rating)
-            .all()
-        )
-        return {str(r): c for r, c in rows}
 
     # --- Votes ---
 
     def get_vote(self, user_id: int, review_id: int) -> ReviewVote | None:
-        """Return a user's vote on a review."""
         return (
             self.db.query(ReviewVote)
             .filter(ReviewVote.user_id == user_id, ReviewVote.review_id == review_id)
@@ -112,9 +92,9 @@ class ReviewRepository:
         )
 
     def create_vote(self, user_id: int, review_id: int) -> ReviewVote:
-        """Create a helpful vote and increment the review's count."""
         vote = ReviewVote(user_id=user_id, review_id=review_id)
         self.db.add(vote)
+        # Increment helpful_count
         review = self.get_review(review_id)
         if review:
             review.helpful_count = (review.helpful_count or 0) + 1
@@ -123,7 +103,6 @@ class ReviewRepository:
         return vote
 
     def delete_vote(self, vote: ReviewVote) -> None:
-        """Remove a helpful vote and decrement the review's count."""
         review = self.get_review(vote.review_id)
         if review and review.helpful_count > 0:
             review.helpful_count -= 1
@@ -131,7 +110,6 @@ class ReviewRepository:
         self.db.commit()
 
     def get_user_voted_review_ids(self, user_id: int, review_ids: list[int]) -> set[int]:
-        """Return set of review IDs the user has voted on."""
         if not review_ids:
             return set()
         rows = (
@@ -143,9 +121,16 @@ class ReviewRepository:
 
     # --- Admin ---
 
-    def flag_review(self, review: BookReview, flagged: bool = True) -> BookReview:
-        """Flag or unflag a review."""
-        review.is_flagged = flagged
+    def flag_review(self, review: BookReview, reason: str) -> BookReview:
+        review.is_flagged = True
+        review.flagged_reason = reason
+        self.db.commit()
+        self.db.refresh(review)
+        return review
+
+    def unflag_review(self, review: BookReview) -> BookReview:
+        review.is_flagged = False
+        review.flagged_reason = None
         self.db.commit()
         self.db.refresh(review)
         return review
