@@ -707,6 +707,23 @@ class ApiService {
   }
 
   /// Format a [DioException] into a user-friendly error message.
+  // --- Share / Deep Links ---
+
+  Future<Map<String, dynamic>> getShareBook(String googleBookId) async {
+    final response = await _dio.get('/api/share/books/$googleBookId');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getShareList(int listId) async {
+    final response = await _dio.get('/api/share/lists/$listId');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getShareUser(int userId) async {
+    final response = await _dio.get('/api/share/users/$userId');
+    return response.data;
+  }
+
   static String formatError(DioException e) {
     if (e.response != null) {
       final data = e.response!.data;

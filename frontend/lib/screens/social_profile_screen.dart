@@ -87,6 +87,16 @@ class _SocialProfileScreenState extends ConsumerState<SocialProfileScreen> {
       appBar: AppBar(
         title: Text(username),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share',
+            onPressed: () {
+              final uid = widget.userId ?? profile['user_id'] as int?;
+              if (uid != null) {
+                ref.read(shareServiceProvider).shareUser(context, uid);
+              }
+            },
+          ),
           if (isOwnProfile)
             IconButton(
               icon: const Icon(Icons.edit),
