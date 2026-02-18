@@ -18,6 +18,7 @@ from app.schemas import (
     BookListDetailResponse,
     BookListItemAdd,
     BookListItemResponse,
+    BookListReorder,
     BookListResponse,
     BookListUpdate,
     FollowResponse,

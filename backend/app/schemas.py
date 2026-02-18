@@ -531,8 +531,15 @@ class BookListResponse(BaseModel):
     created_at: datetime.datetime
     item_count: int = 0
     owner_username: str = ""
+    cover_thumbnails: list[str] = []
 
     model_config = {"from_attributes": True}
+
+
+class BookListReorder(BaseModel):
+    """Request schema for reordering books in a list."""
+
+    book_ids: list[str] = Field(..., min_length=1)
 
 
 class BookListDetailResponse(BookListResponse):

@@ -155,6 +155,13 @@ class ApiService {
     );
   }
 
+  /// Save selected genre preferences from onboarding.
+  Future<void> updateGenrePreferences(List<String> genres) async {
+    await _requestWithRetry(
+      () => _dio.put('/api/books/preferences', data: {'genres': genres}),
+    );
+  }
+
   /// Skip a book (mark as not interested).
   Future<void> skipBook(String bookId) async {
     await _requestWithRetry(

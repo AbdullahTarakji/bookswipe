@@ -115,7 +115,6 @@ class ReviewRepository:
         """Create a helpful vote and increment the review's count."""
         vote = ReviewVote(user_id=user_id, review_id=review_id)
         self.db.add(vote)
-        # Increment helpful_count
         review = self.get_review(review_id)
         if review:
             review.helpful_count = (review.helpful_count or 0) + 1
