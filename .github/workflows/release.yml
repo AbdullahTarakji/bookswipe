@@ -141,8 +141,23 @@ jobs:
     environment: production
     steps:
       - name: Deploy to production
+        env:
+          DEPLOY_HOST: ${{ secrets.PROD_HOST }}
+          DEPLOY_USER: ${{ secrets.PROD_USER }}
+          DEPLOY_KEY: ${{ secrets.PROD_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH || '/opt/bookswipe' }}
+          IMAGE_TAG: ${{ github.ref_name }}
         run: |
-          echo "Deploying ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} to production"
-          echo "Configure this step with your deployment target (SSH, kubectl, etc.)"
-          # Example SSH deploy:
-          # ssh ${{ secrets.PROD_HOST }} "cd /opt/bookswipe && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
+          # Set up SSH key
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new ${DEPLOY_USER}@${DEPLOY_HOST}"
+
+          # Run deployment script on production server
+          $SSH_CMD "cd ${DEPLOY_PATH} && git fetch --tags && git checkout ${IMAGE_TAG} && ./scripts/deploy-prod.sh ${IMAGE_TAG}"
+
+          # Cleanup
+          rm -f ~/.ssh/deploy_key
