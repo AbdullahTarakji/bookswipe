@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 env:
   REGISTRY: ghcr.io
@@ -74,13 +74,50 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-staging:
+    if: github.ref == 'refs/heads/develop'
     needs: build-and-push
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - name: Deploy to staging
+      - name: Deploy to staging via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd /opt/bookswipe
+
+            echo "==> Pulling latest code..."
+            git fetch origin develop
+            git checkout develop
+            git reset --hard origin/develop
+
+            echo "==> Running deploy script..."
+            bash scripts/deploy-staging.sh --skip-build
+
+            echo "==> Building with new image tag..."
+            docker compose -f docker-compose.staging.yml -p bookswipe-staging build --parallel
+            docker compose -f docker-compose.staging.yml -p bookswipe-staging up -d
+
+            echo "==> Verifying health..."
+            sleep 10
+            curl -sf http://localhost:80/health || {
+              echo "Health check failed!"
+              docker compose -f docker-compose.staging.yml -p bookswipe-staging logs --tail=50
+              exit 1
+            }
+            echo "==> Staging deployment successful!"
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy to production
         run: |
-          echo "Deploying ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} to staging"
-          echo "Configure this step with your deployment target (SSH, kubectl, etc.)"
-          # Example SSH deploy:
-          # ssh ${{ secrets.STAGING_HOST }} "cd /opt/bookswipe && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
+          echo "Deploying ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} to production"
+          echo "Configure this step with your production deployment target"
