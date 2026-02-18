@@ -297,6 +297,18 @@ class BookListItem(Base):
     book_list: Mapped[BookList] = relationship(back_populates="items")
 
 
+class ShortLink(Base):
+    """Short URL that redirects to a deep link target."""
+
+    __tablename__ = "short_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    short_code: Mapped[str] = mapped_column(String(12), unique=True, nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(20), nullable=False)  # book, list, user
+    target_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+
 class BookCover(Base):
     """Processed cover images stored in S3 with multiple size variants."""
 

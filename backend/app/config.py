@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # Firebase Cloud Messaging
     fcm_credentials_path: str = ""
 
+    # Deep links / sharing
+    app_base_url: str = "https://bookswipe.app"
+
     # S3 / MinIO (cover image CDN)
     s3_bucket: str = "bookswipe-covers"
     s3_region: str = "us-east-1"

@@ -575,3 +575,24 @@ class UserSearchResponse(BaseModel):
 
     users: list[FollowResponse]
     total: int
+
+
+# --- Sharing / Deep Links ---
+
+
+class OGMetadata(BaseModel):
+    """Open Graph metadata for social media link previews."""
+
+    og_title: str
+    og_description: str
+    og_image: str | None = None
+    og_type: str = "website"
+    og_url: str = ""
+
+
+class ShareResponse(BaseModel):
+    """Response with a shareable deep link URL and OG metadata."""
+
+    url: str
+    short_url: str | None = None
+    og: OGMetadata
