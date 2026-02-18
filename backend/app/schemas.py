@@ -804,3 +804,18 @@ class DetailedAnalyticsResponse(BaseModel):
     popular_books: PopularBooks = PopularBooks()
     retention: RetentionData = RetentionData()
     categories: CategoryBreakdown = CategoryBreakdown()
+
+
+# ── Privacy / Compliance ─────────────────────────────────────
+
+class PrivacyConsentUpdate(BaseModel):
+    """Request schema for updating privacy consent preferences."""
+    analytics_consent: bool = False
+    marketing_consent: bool = False
+
+
+class PrivacyConsentResponse(BaseModel):
+    """Response schema for privacy consent status."""
+    analytics_consent: bool
+    marketing_consent: bool
+    consent_date: str | None = None

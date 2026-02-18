@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     # OAuth
     google_client_id: str = ""
     apple_client_id: str = ""
+    apple_service_id: str = ""
+    apple_team_id: str = ""
+    apple_key_id: str = ""
+
+    # Account deletion grace period (hours) — 0 = immediate
+    account_deletion_grace_hours: int = 48
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

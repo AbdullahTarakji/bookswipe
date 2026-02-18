@@ -15,6 +15,8 @@ from app.schemas import (
     AppleAuthRequest,
     GoogleAuthRequest,
     MessageResponse,
+    PrivacyConsentResponse,
+    PrivacyConsentUpdate,
     TokenRefresh,
     TokenResponse,
     UserLogin,
@@ -190,7 +192,149 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 @router.delete("/me", response_model=MessageResponse)
 def delete_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Soft-delete the authenticated user's account (GDPR compliance)."""
+    """Delete the authenticated user's account: anonymize PII, cancel subscriptions (GDPR/App Store compliance)."""
+    original_email = current_user.email
+
+    # Send confirmation email before deletion (best effort)
+    try:
+        from app.services.email_service import send_email
+        from app.config import settings as app_settings
+
+        send_email(
+            original_email,
+            "BookSwipe — Account Deleted",
+            f"<p>Your BookSwipe account ({original_email}) has been deleted and your personal data has been anonymized.</p>"
+            f"<p>If you did not request this, please contact us at support@bookswipe.app.</p>",
+        )
+    except Exception:
+        logger.warning("Failed to send account deletion email to %s", original_email)
+
     repo = UserRepository(db)
     repo.soft_delete(current_user)
-    return MessageResponse(message="Account deleted")
+    return MessageResponse(message="Account deleted. Your personal data has been anonymized.")
+
+
+@router.get("/privacy-consent", response_model=PrivacyConsentResponse)
+def get_privacy_consent(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get the current user's privacy/analytics consent status."""
+    from app.models import PrivacyConsent
+
+    consent = db.query(PrivacyConsent).filter(PrivacyConsent.user_id == current_user.id).first()
+    if not consent:
+        return PrivacyConsentResponse(analytics_consent=False, marketing_consent=False, consent_date=None)
+    return PrivacyConsentResponse(
+        analytics_consent=consent.analytics_consent,
+        marketing_consent=consent.marketing_consent,
+        consent_date=consent.updated_at.isoformat() if consent.updated_at else None,
+    )
+
+
+@router.put("/privacy-consent", response_model=PrivacyConsentResponse)
+def update_privacy_consent(
+    body: PrivacyConsentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update the current user's privacy/analytics consent."""
+    import datetime
+    from app.models import PrivacyConsent
+
+    consent = db.query(PrivacyConsent).filter(PrivacyConsent.user_id == current_user.id).first()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if not consent:
+        consent = PrivacyConsent(
+            user_id=current_user.id,
+            analytics_consent=body.analytics_consent,
+            marketing_consent=body.marketing_consent,
+            updated_at=now,
+        )
+        db.add(consent)
+    else:
+        consent.analytics_consent = body.analytics_consent
+        consent.marketing_consent = body.marketing_consent
+        consent.updated_at = now
+    db.commit()
+    return PrivacyConsentResponse(
+        analytics_consent=consent.analytics_consent,
+        marketing_consent=consent.marketing_consent,
+        consent_date=now.isoformat(),
+    )
+
+
+@router.get("/export-data")
+def export_data(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Export all user data as JSON (GDPR right to data portability)."""
+    from app.models import LikedBook, SwipeEvent, BookList, BookListItem, ActivityEvent, BookReview, PrivacyConsent
+
+    liked = db.query(LikedBook).filter(LikedBook.user_id == current_user.id).all()
+    swipes = db.query(SwipeEvent).filter(SwipeEvent.user_id == current_user.id).all()
+    lists = db.query(BookList).filter(BookList.user_id == current_user.id).all()
+    activities = db.query(ActivityEvent).filter(ActivityEvent.user_id == current_user.id).all()
+    consent = db.query(PrivacyConsent).filter(PrivacyConsent.user_id == current_user.id).first()
+
+    # Gather list items
+    list_data = []
+    for bl in lists:
+        items = db.query(BookListItem).filter(BookListItem.list_id == bl.id).all()
+        list_data.append({
+            "id": bl.id,
+            "name": bl.name,
+            "description": bl.description,
+            "is_public": bl.is_public,
+            "created_at": bl.created_at.isoformat() if bl.created_at else None,
+            "items": [{"google_book_id": i.google_book_id, "position": i.position} for i in items],
+        })
+
+    # Try to get reviews if the model exists
+    reviews_data = []
+    try:
+        reviews = db.query(BookReview).filter(BookReview.user_id == current_user.id).all()
+        reviews_data = [
+            {
+                "id": r.id,
+                "google_book_id": r.google_book_id,
+                "rating": r.rating,
+                "text": r.review_text,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in reviews
+        ]
+    except Exception:
+        pass
+
+    return {
+        "profile": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "auth_provider": current_user.auth_provider,
+            "role": current_user.role,
+            "subscription_status": current_user.subscription_status,
+            "subscription_plan": current_user.subscription_plan,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        },
+        "liked_books": [
+            {"google_book_id": lb.google_book_id, "liked_at": lb.liked_at.isoformat() if lb.liked_at else None}
+            for lb in liked
+        ],
+        "swipe_events": [
+            {
+                "google_book_id": se.google_book_id,
+                "action": se.action,
+                "created_at": se.created_at.isoformat() if se.created_at else None,
+            }
+            for se in swipes
+        ],
+        "book_lists": list_data,
+        "reviews": reviews_data,
+        "activity": [
+            {
+                "event_type": ae.event_type,
+                "created_at": ae.created_at.isoformat() if ae.created_at else None,
+            }
+            for ae in activities
+        ],
+        "privacy_consent": {
+            "analytics_consent": consent.analytics_consent if consent else None,
+            "marketing_consent": consent.marketing_consent if consent else None,
+        },
+    }

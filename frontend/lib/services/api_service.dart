@@ -796,4 +796,34 @@ class ApiService {
         return 'Network error. Please try again';
     }
   }
+
+  // ── Compliance / GDPR endpoints ────────────────────────────
+
+  /// Delete the current user's account (GDPR compliance).
+  Future<void> deleteMyAccount() async {
+    await _requestWithRetry(() => _dio.delete('/api/auth/me'));
+  }
+
+  /// Get the current user's privacy consent status.
+  Future<Map<String, dynamic>> getPrivacyConsent() async {
+    final response = await _requestWithRetry(() => _dio.get('/api/auth/privacy-consent'));
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Update the current user's privacy consent preferences.
+  Future<void> updatePrivacyConsent({
+    required bool analyticsConsent,
+    required bool marketingConsent,
+  }) async {
+    await _requestWithRetry(() => _dio.put('/api/auth/privacy-consent', data: {
+      'analytics_consent': analyticsConsent,
+      'marketing_consent': marketingConsent,
+    }));
+  }
+
+  /// Export all user data (GDPR right to data portability).
+  Future<Map<String, dynamic>> exportMyData() async {
+    final response = await _requestWithRetry(() => _dio.get('/api/auth/export-data'));
+    return response.data as Map<String, dynamic>;
+  }
 }

@@ -27,7 +27,7 @@ from app.exceptions import BookSwipeException
 from app.logging_config import setup_logging
 from app.metrics import create_instrumentator
 from app.models import Category, User, SEED_CATEGORIES
-from app.routers import admin, analytics, auth, books, categories, notifications, payments, recommendations, revenuecat_webhook, reviews, search, share, social
+from app.routers import admin, analytics, auth, books, categories, legal, notifications, payments, recommendations, revenuecat_webhook, reviews, search, share, social
 from app.services.auth import hash_password
 from app.services.cache import close_redis, redis_ping
 from app.sentry_setup import init_sentry
@@ -224,6 +224,7 @@ app.include_router(reviews.router)
 app.include_router(search.router)
 app.include_router(analytics.router)
 app.include_router(share.router)
+app.include_router(legal.router)
 
 
 @app.get("/health")

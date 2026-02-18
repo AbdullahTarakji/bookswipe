@@ -50,11 +50,24 @@ class UserRepository:
         self.db.commit()
 
     def soft_delete(self, user: User) -> None:
-        """Soft-delete a user for GDPR compliance."""
+        """Soft-delete a user for GDPR compliance: deactivate, anonymize PII, cancel subscriptions."""
         import datetime
+        import uuid
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        anon_suffix = uuid.uuid4().hex[:12]
 
         user.is_active = False
-        user.deleted_at = datetime.datetime.now(datetime.timezone.utc)
+        user.deleted_at = now
+        # Anonymize PII
+        user.email = f"deleted_{anon_suffix}@anonymized.local"
+        user.hashed_password = ""
+        user.auth_provider = "deleted"
+        user.provider_id = None
+        # Cancel active subscriptions
+        if user.subscription_status == "active":
+            user.subscription_status = "cancelled"
+            user.subscription_end_date = now
         self.db.commit()
 
     def is_token_blacklisted(self, jti: str) -> bool:

@@ -408,6 +408,19 @@ class SearchHistory(Base):
     user: Mapped[User] = relationship()
 
 
+class PrivacyConsent(Base):
+    """Tracks user privacy/analytics consent for GDPR compliance."""
+    __tablename__ = "privacy_consents"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    analytics_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 SEED_CATEGORIES = [
     {"name": "Fiction", "google_category_key": "fiction"},
     {"name": "Romance", "google_category_key": "romance"},
