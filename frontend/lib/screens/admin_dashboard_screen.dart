@@ -94,6 +94,15 @@ class _DashboardContent extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: () => GoRouter.of(context).push('/admin/analytics'),
+            icon: const Icon(Icons.analytics),
+            label: const Text('Detailed Analytics'),
+          ),
+        ),
         const SizedBox(height: 24),
 
         // Stats cards

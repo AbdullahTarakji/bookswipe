@@ -575,3 +575,87 @@ class UserSearchResponse(BaseModel):
 
     users: list[FollowResponse]
     total: int
+
+
+# --- Detailed Analytics ---
+
+
+class TimeSeriesPoint(BaseModel):
+    """A single data point in a time series."""
+    date: str
+    count: int
+
+
+class EngagementMetrics(BaseModel):
+    """User engagement metrics."""
+    dau: int
+    wau: int
+    mau: int
+    signups_over_time: list[TimeSeriesPoint]
+
+
+class SwipeStats(BaseModel):
+    """Swipe statistics."""
+    total_swipes: int
+    total_likes: int
+    total_skips: int
+    like_ratio: float
+    skip_ratio: float
+    swipes_per_user_avg: float
+    swipes_over_time: list[TimeSeriesPoint]
+
+
+class PopularBook(BaseModel):
+    """A popular book entry."""
+    google_book_id: str
+    title: str = ""
+    authors: str = ""
+    thumbnail: str = ""
+    like_count: int = 0
+
+
+class SwipedBook(BaseModel):
+    """A frequently swiped book."""
+    google_book_id: str
+    swipe_count: int = 0
+
+
+class PopularBooks(BaseModel):
+    """Popular books breakdown."""
+    most_liked: list[PopularBook]
+    most_swiped: list[SwipedBook]
+    trending_this_week: list[PopularBook]
+
+
+class RetentionCohort(BaseModel):
+    """A single retention cohort."""
+    cohort_week: str
+    cohort_size: int
+    retained_week_1: float
+    retained_week_2: float
+
+
+class RetentionData(BaseModel):
+    """Retention cohort data."""
+    cohorts: list[RetentionCohort]
+
+
+class CategoryStat(BaseModel):
+    """Category activity stat."""
+    category: str
+    count: int
+
+
+class CategoryBreakdown(BaseModel):
+    """Category breakdown."""
+    likes_by_category: list[CategoryStat]
+    most_active_categories: list[CategoryStat]
+
+
+class DetailedAnalyticsResponse(BaseModel):
+    """Full analytics dashboard response."""
+    engagement: EngagementMetrics
+    swipes: SwipeStats
+    popular_books: PopularBooks
+    retention: RetentionData
+    categories: CategoryBreakdown

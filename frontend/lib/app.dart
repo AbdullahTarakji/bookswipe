@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'main.dart';
 import 'screens/activity_feed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/analytics_dashboard_screen.dart';
 import 'screens/admin_system_screen.dart';
 import 'screens/admin_users_screen.dart';
 import 'screens/book_detail_screen.dart';
@@ -77,6 +78,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/admin/system',
         builder: (context, state) => const AdminGuard(child: AdminSystemScreen()),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/admin/analytics',
+        builder: (context, state) => const AdminGuard(child: AnalyticsDashboardScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
