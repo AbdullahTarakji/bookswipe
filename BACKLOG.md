@@ -28,5 +28,7 @@
 - [x] Load testing (k6/locust)
 - [x] E2E Testing
 
-## P4 — Deployment (NEXT)
-- [ ] Staging + production deployment
+## P4 — Deployment ✅ COMPLETE
+- [x] Staging deployment (docker-compose.staging.yml, deploy script, CI/CD, nginx SPA)
+- [x] Production deployment (deploy script, rollback, SSL/TLS, migrations, backup, CI/CD)
+- [x] Deployment documentation (docs/DEPLOYMENT.md)
