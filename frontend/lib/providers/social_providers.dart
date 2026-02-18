@@ -100,6 +100,34 @@ class BookListsNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
   }
 }
 
+// --- Browse Public Lists ---
+
+/// Manages browsing public lists from other users.
+final publicListsProvider =
+    AsyncNotifierProvider<PublicListsNotifier, List<Map<String, dynamic>>>(
+        PublicListsNotifier.new);
+
+class PublicListsNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
+  @override
+  Future<List<Map<String, dynamic>>> build() async {
+    final auth = ref.watch(authStateProvider);
+    if (auth.valueOrNull == null) return [];
+    final api = ref.read(apiServiceProvider);
+    try {
+      final data = await api.browsePublicLists();
+      final lists = data['lists'] as List<dynamic>;
+      return lists.map((l) => l as Map<String, dynamic>).toList();
+    } on DioException catch (e) {
+      throw ApiService.formatError(e);
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    ref.invalidateSelf();
+  }
+}
+
 // --- User Search ---
 
 /// Tracks the user search query.

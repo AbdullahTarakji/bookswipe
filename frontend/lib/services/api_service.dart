@@ -607,6 +607,27 @@ class ApiService {
     );
   }
 
+  /// Reorder books within a list.
+  Future<List<dynamic>> reorderBookList(int listId, List<String> bookIds) async {
+    final response = await _requestWithRetry(
+      () => _dio.put('/api/book-lists/$listId/reorder', data: {
+        'book_ids': bookIds,
+      }),
+    );
+    return response.data as List<dynamic>;
+  }
+
+  /// Browse public book lists from other users.
+  Future<Map<String, dynamic>> browsePublicLists({int page = 1, int pageSize = 20}) async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/book-lists/public/browse', queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      }),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   /// Format a [DioException] into a user-friendly error message.
   static String formatError(DioException e) {
     if (e.response != null) {

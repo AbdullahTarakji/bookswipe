@@ -44,18 +44,6 @@ class BookListRepository:
         )
         return lists, total
 
-    def get_public_lists(self, page: int, page_size: int) -> tuple[list[BookList], int]:
-        """Return paginated public book lists from all users."""
-        query = self.db.query(BookList).filter(BookList.is_public.is_(True))
-        total = query.count()
-        lists = (
-            query.order_by(BookList.created_at.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
-        return lists, total
-
     def create_list(self, user_id: int, name: str, description: str = "", is_public: bool = True) -> BookList:
         """Create a new book list."""
         book_list = BookList(
@@ -87,17 +75,6 @@ class BookListRepository:
         """Return number of items in a book list."""
         return self.db.query(BookListItem).filter(BookListItem.list_id == list_id).count()
 
-    def get_cover_thumbnails(self, list_id: int, limit: int = 4) -> list[str]:
-        """Return up to `limit` thumbnail URLs from the first items in a list."""
-        items = (
-            self.db.query(BookListItem.thumbnail)
-            .filter(BookListItem.list_id == list_id, BookListItem.thumbnail != "")
-            .order_by(BookListItem.position, BookListItem.added_at)
-            .limit(limit)
-            .all()
-        )
-        return [row[0] for row in items]
-
     # --- Items ---
 
     def get_item(self, list_id: int, book_id: str) -> BookListItem | None:
@@ -113,34 +90,32 @@ class BookListRepository:
         return (
             self.db.query(BookListItem)
             .filter(BookListItem.list_id == list_id)
-            .order_by(BookListItem.position, BookListItem.added_at)
+            .order_by(BookListItem.position.asc(), BookListItem.added_at.desc())
             .all()
         )
 
-    def get_next_position(self, list_id: int) -> int:
-        """Return the next position value for a new item."""
+    def get_public_lists(self, page: int, page_size: int, exclude_user_id: int | None = None) -> tuple[list[BookList], int]:
+        """Return paginated public book lists, optionally excluding a user."""
+        query = self.db.query(BookList).filter(BookList.is_public.is_(True))
+        if exclude_user_id is not None:
+            query = query.filter(BookList.user_id != exclude_user_id)
+        total = query.count()
+        lists = (
+            query.order_by(BookList.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return lists, total
+
+    def add_item(self, list_id: int, book_id: str, note: str = "") -> BookListItem:
+        """Add a book to a list at the end."""
         max_pos = (
-            self.db.query(func.max(BookListItem.position))
+            self.db.query(func.coalesce(func.max(BookListItem.position), -1))
             .filter(BookListItem.list_id == list_id)
             .scalar()
         )
-        return (max_pos or 0) + 1
-
-    def add_item(
-        self, list_id: int, book_id: str, note: str = "",
-        title: str = "", authors: str = "", thumbnail: str = "",
-    ) -> BookListItem:
-        """Add a book to a list."""
-        position = self.get_next_position(list_id)
-        item = BookListItem(
-            list_id=list_id,
-            book_id=book_id,
-            title=title,
-            authors=authors,
-            thumbnail=thumbnail,
-            note=note,
-            position=position,
-        )
+        item = BookListItem(list_id=list_id, book_id=book_id, note=note, position=max_pos + 1)
         self.db.add(item)
         self.db.commit()
         self.db.refresh(item)
@@ -152,7 +127,7 @@ class BookListRepository:
         self.db.commit()
 
     def reorder_items(self, list_id: int, book_ids: list[str]) -> list[BookListItem]:
-        """Reorder items in a list according to the given book_id order."""
+        """Reorder items in a list by setting positions based on the provided order."""
         items = self.get_items(list_id)
         item_map = {item.book_id: item for item in items}
         for position, book_id in enumerate(book_ids):

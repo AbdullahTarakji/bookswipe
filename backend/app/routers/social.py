@@ -330,6 +330,34 @@ def get_my_book_lists(
     )
 
 
+@router.get("/book-lists/public/browse", response_model=PaginatedBookLists)
+def browse_public_lists(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Browse public book lists from other users."""
+    repo = BookListRepository(db)
+    lists, total = repo.get_public_lists(page, page_size, exclude_user_id=current_user.id)
+    result_lists = []
+    for bl in lists:
+        owner = db.query(User).filter(User.id == bl.user_id).first()
+        result_lists.append(
+            BookListResponse(
+                id=bl.id,
+                user_id=bl.user_id,
+                name=bl.name,
+                description=bl.description,
+                is_public=bl.is_public,
+                created_at=bl.created_at,
+                item_count=repo.get_item_count(bl.id),
+                owner_username=_username_from_user(owner) if owner else "",
+            )
+        )
+    return PaginatedBookLists(lists=result_lists, total=total, page=page, page_size=page_size)
+
+
 @router.get("/book-lists/{list_id}", response_model=BookListDetailResponse)
 def get_book_list(
     list_id: int,
@@ -427,6 +455,24 @@ def add_book_to_list(
         raise ValidationError("Book already in list")
     item = repo.add_item(list_id, body.book_id, body.note)
     return BookListItemResponse.model_validate(item)
+
+
+@router.put("/book-lists/{list_id}/reorder", response_model=list[BookListItemResponse])
+def reorder_book_list(
+    list_id: int,
+    body: BookListReorder,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reorder books within a list."""
+    repo = BookListRepository(db)
+    book_list = repo.get_list(list_id)
+    if not book_list:
+        raise NotFoundError("Book list not found")
+    if book_list.user_id != current_user.id:
+        raise ForbiddenError("Cannot modify another user's list")
+    items = repo.reorder_items(list_id, body.book_ids)
+    return [BookListItemResponse.model_validate(item) for item in items]
 
 
 @router.delete("/book-lists/{list_id}/books/{book_id}", response_model=MessageResponse)
