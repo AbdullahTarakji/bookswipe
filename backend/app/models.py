@@ -331,6 +331,49 @@ class ActivityEvent(Base):
     user: Mapped[User] = relationship(back_populates="activity_events")
 
 
+class BookReview(Base):
+    """A user's review and star rating for a book."""
+
+    __tablename__ = "book_reviews"
+    __table_args__ = (
+        UniqueConstraint("user_id", "google_book_id", name="uq_user_book_review"),
+        Index("ix_book_reviews_book_id", "google_book_id"),
+        Index("ix_book_reviews_created_at", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    google_book_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    review_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    is_flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    flagged_reason: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
+    helpful_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    user: Mapped[User] = relationship(foreign_keys=[user_id])
+    votes: Mapped[list["ReviewVote"]] = relationship(back_populates="review", cascade="all, delete-orphan")
+
+
+class ReviewVote(Base):
+    """A 'helpful' vote on a book review (one per user per review)."""
+
+    __tablename__ = "review_votes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "review_id", name="uq_user_review_vote"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    review_id: Mapped[int] = mapped_column(ForeignKey("book_reviews.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    review: Mapped[BookReview] = relationship(back_populates="votes")
+
+
 SEED_CATEGORIES = [
     {"name": "Fiction", "google_category_key": "fiction"},
     {"name": "Romance", "google_category_key": "romance"},

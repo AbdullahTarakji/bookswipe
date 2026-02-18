@@ -5,6 +5,7 @@ import '../models/book.dart';
 import '../providers/providers.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
+import '../widgets/review_section.dart';
 import '../widgets/swipe_snackbar.dart';
 
 /// Full-page book detail screen with Hero cover animation and shimmer loading.
@@ -137,6 +138,7 @@ class BookDetailScreen extends ConsumerWidget {
                     _buildInfoRow(Icons.calendar_today, 'Published',
                         book.publishedDate!),
                 ],
+                ReviewSection(bookId: book.id),
                 const SizedBox(height: 40),
               ],
             ),
