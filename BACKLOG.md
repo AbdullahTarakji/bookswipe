@@ -35,40 +35,49 @@
 
 ## P6 — App Store Publication (NEXT)
 
-### 🚨 Critical: In-App Purchase Migration
-Stripe CANNOT be used for in-app digital subscriptions on iOS or Android.
-Both Apple and Google require their native billing systems.
-**Action:** Implement RevenueCat or `in_app_purchase` Flutter plugin for cross-platform billing.
-Stripe stays for web-only subscriptions.
+### Track 1: Billing Migration (IN PROGRESS)
+- [ ] Integrate RevenueCat SDK (`purchases_flutter`) for cross-platform billing
+- [ ] Create unified payment service (RevenueCat on mobile, Stripe on web)
+- [ ] Server-side receipt validation for both Apple & Google
+- [ ] Restore Purchases button on subscription screen
+- [ ] Subscription management screen (view plan, cancel, upgrade)
+- [ ] Handle all subscription states (active, expired, grace period, billing retry)
+- [ ] Update subscription screen UI for RevenueCat paywall
+- [ ] Tests for billing service
 
-### Apple App Store (see docs/APPLE_STORE_CHECKLIST.md)
+### Track 2: Compliance & Legal (IN PROGRESS)
+- [ ] Sign in with Apple (required since we offer Google OAuth)
+- [ ] Account deletion feature (required by both stores)
+- [ ] Privacy Policy — draft and host publicly
+- [ ] Terms of Service — draft and host publicly
+- [ ] iOS Privacy manifest (PrivacyInfo.xcprivacy)
+- [ ] iOS Required Reason APIs declarations
+- [ ] Google Data Safety section preparation
+- [ ] GDPR consent mechanism
+- [ ] CCPA "Do Not Sell" option
+- [ ] Content rating questionnaires (Apple + IARC for Google)
+- [ ] Export compliance declaration
+
+### Track 3: Store Assets & Config (after Track 1 & 2)
+- [ ] App icon — 1024x1024 source, generate all sizes
+- [ ] Screenshots — all iPhone sizes + Android phone/tablet
+- [ ] Feature graphic (Google Play) — 1024x500
+- [ ] App name, subtitle, description, keywords
+- [ ] App preview video (optional but recommended)
+- [ ] Store category selection
+- [ ] Demo account for Apple App Review
+
+### Track 4: Store Accounts & Submission (LAST STEP — requires Abed)
 - [ ] Apple Developer Program enrollment ($99/year)
-- [ ] Replace Stripe with Apple IAP (StoreKit) for iOS subscriptions
-- [ ] Implement "Sign in with Apple" (required if offering Google OAuth)
-- [ ] Add "Restore Purchases" button
-- [ ] Add account deletion feature
-- [ ] Privacy manifest (PrivacyInfo.xcprivacy)
-- [ ] App Privacy labels in App Store Connect
-- [ ] Privacy Policy & Terms of Service URLs
-- [ ] App icons (all required sizes), screenshots (all devices), description
-- [ ] Demo account for App Review
-- [ ] Code signing (certificates, provisioning profiles)
-- [ ] TestFlight beta testing
-- [ ] Content rating questionnaire
-- [ ] Estimated timeline: ~3-4 weeks
-
-### Google Play Store (see docs/GOOGLE_PLAY_CHECKLIST.md)
 - [ ] Google Play Developer account ($25 one-time) + identity verification
-- [ ] Replace Stripe with Google Play Billing for Android subscriptions
-- [ ] Data Safety section disclosures
-- [ ] Data deletion mechanism
-- [ ] Target SDK 35 (Android 15)
-- [ ] App Bundle (AAB) format
-- [ ] Privacy Policy URL
-- [ ] App icons, feature graphic, screenshots
-- [ ] Content rating (IARC)
-- [ ] Closed testing with ≥20 testers for ≥14 days (new account requirement)
-- [ ] Estimated timeline: ~6-8 weeks
+- [ ] App Store Connect setup (app record, bundle ID, IAP products)
+- [ ] Google Play Console setup (app listing, subscription products)
+- [ ] Code signing (Apple certificates + Google upload keystore)
+- [ ] TestFlight beta (Apple)
+- [ ] Closed testing 20+ testers 14+ days (Google)
+- [ ] Production submission
+
+See full checklists: docs/APPLE_STORE_CHECKLIST.md & docs/GOOGLE_PLAY_CHECKLIST.md
 
 ## P5 — Product Features v2 ✅ COMPLETE
 - [x] US-30: Reading Lists & Collections (custom lists, CRUD, share, reorder)
