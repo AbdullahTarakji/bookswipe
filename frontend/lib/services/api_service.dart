@@ -353,6 +353,14 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Fetch detailed analytics for the analytics dashboard.
+  Future<Map<String, dynamic>> getDetailedAnalytics() async {
+    final response = await _requestWithRetry(
+      () => _dio.get('/api/admin/analytics/detailed'),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   /// Fetch system info.
   Future<Map<String, dynamic>> getSystemInfo() async {
     final response = await _requestWithRetry(

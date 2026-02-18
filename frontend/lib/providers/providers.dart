@@ -489,10 +489,16 @@ final swipeStatusProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 // --- Admin ---
 
-/// Fetches admin analytics data.
+/// Fetches admin analytics data (basic).
 final adminAnalyticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final api = ref.read(apiServiceProvider);
   return api.getAnalytics();
+});
+
+/// Fetches detailed analytics for the analytics dashboard.
+final detailedAnalyticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final api = ref.read(apiServiceProvider);
+  return api.getDetailedAnalytics();
 });
 
 /// Fetches system info for admin panel.
