@@ -33,6 +33,43 @@
 - [x] Production deployment (deploy script, rollback, SSL/TLS, migrations, backup, CI/CD)
 - [x] Deployment documentation (docs/DEPLOYMENT.md)
 
+## P6 — App Store Publication (NEXT)
+
+### 🚨 Critical: In-App Purchase Migration
+Stripe CANNOT be used for in-app digital subscriptions on iOS or Android.
+Both Apple and Google require their native billing systems.
+**Action:** Implement RevenueCat or `in_app_purchase` Flutter plugin for cross-platform billing.
+Stripe stays for web-only subscriptions.
+
+### Apple App Store (see docs/APPLE_STORE_CHECKLIST.md)
+- [ ] Apple Developer Program enrollment ($99/year)
+- [ ] Replace Stripe with Apple IAP (StoreKit) for iOS subscriptions
+- [ ] Implement "Sign in with Apple" (required if offering Google OAuth)
+- [ ] Add "Restore Purchases" button
+- [ ] Add account deletion feature
+- [ ] Privacy manifest (PrivacyInfo.xcprivacy)
+- [ ] App Privacy labels in App Store Connect
+- [ ] Privacy Policy & Terms of Service URLs
+- [ ] App icons (all required sizes), screenshots (all devices), description
+- [ ] Demo account for App Review
+- [ ] Code signing (certificates, provisioning profiles)
+- [ ] TestFlight beta testing
+- [ ] Content rating questionnaire
+- [ ] Estimated timeline: ~3-4 weeks
+
+### Google Play Store (see docs/GOOGLE_PLAY_CHECKLIST.md)
+- [ ] Google Play Developer account ($25 one-time) + identity verification
+- [ ] Replace Stripe with Google Play Billing for Android subscriptions
+- [ ] Data Safety section disclosures
+- [ ] Data deletion mechanism
+- [ ] Target SDK 35 (Android 15)
+- [ ] App Bundle (AAB) format
+- [ ] Privacy Policy URL
+- [ ] App icons, feature graphic, screenshots
+- [ ] Content rating (IARC)
+- [ ] Closed testing with ≥20 testers for ≥14 days (new account requirement)
+- [ ] Estimated timeline: ~6-8 weeks
+
 ## P5 — Product Features v2 ✅ COMPLETE
 - [x] US-30: Reading Lists & Collections (custom lists, CRUD, share, reorder)
 - [x] US-31: User Reviews & Ratings (write/edit/delete reviews, star ratings, helpful votes)
