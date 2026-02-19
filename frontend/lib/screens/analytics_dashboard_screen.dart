@@ -65,7 +65,7 @@ class _AnalyticsContent extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         // ── Engagement Section ──
-        _SectionHeader(title: 'User Engagement', icon: Icons.people),
+        const _SectionHeader(title: 'User Engagement', icon: Icons.people),
         const SizedBox(height: 12),
         _EngagementCards(engagement: engagement),
         const SizedBox(height: 16),
@@ -75,7 +75,7 @@ class _AnalyticsContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Swipe Stats Section ──
-        _SectionHeader(title: 'Swipe Statistics', icon: Icons.swipe),
+        const _SectionHeader(title: 'Swipe Statistics', icon: Icons.swipe),
         const SizedBox(height: 12),
         _SwipeCards(swipes: swipes),
         const SizedBox(height: 16),
@@ -85,7 +85,7 @@ class _AnalyticsContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Popular Books Section ──
-        _SectionHeader(title: 'Popular Books', icon: Icons.auto_awesome),
+        const _SectionHeader(title: 'Popular Books', icon: Icons.auto_awesome),
         const SizedBox(height: 12),
         _PopularBooksList(
           title: 'Most Liked',
@@ -99,7 +99,7 @@ class _AnalyticsContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Retention Section ──
-        _SectionHeader(title: 'Retention', icon: Icons.repeat),
+        const _SectionHeader(title: 'Retention', icon: Icons.repeat),
         const SizedBox(height: 12),
         _RetentionTable(
           cohorts: (retention['cohorts'] as List<dynamic>?) ?? [],
@@ -107,7 +107,7 @@ class _AnalyticsContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Category Breakdown ──
-        _SectionHeader(title: 'Category Breakdown', icon: Icons.category),
+        const _SectionHeader(title: 'Category Breakdown', icon: Icons.category),
         const SizedBox(height: 12),
         _CategoryChart(
           categories: (categories['likes_by_category'] as List<dynamic>?) ?? [],
@@ -349,7 +349,7 @@ class _PopularBooksList extends StatelessWidget {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.network(bookMap['thumbnail'] as String, width: 32, height: 48, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.book, size: 32)),
+                          errorBuilder: (_, _, _) => const Icon(Icons.book, size: 32)),
                       )
                     : const Icon(Icons.book, size: 32),
                 title: Text(bookMap['title'] as String? ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis),
