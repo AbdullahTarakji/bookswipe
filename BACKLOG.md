@@ -33,6 +33,44 @@
 - [x] Production deployment (deploy script, rollback, SSL/TLS, migrations, backup, CI/CD)
 - [x] Deployment documentation (docs/DEPLOYMENT.md)
 
+## P5.5 — Tablet & Large Screen Support (IN PROGRESS)
+
+### US-46: Responsive Framework Integration
+- [ ] Add `responsive_framework` package to pubspec.yaml
+- [ ] Configure breakpoints in MaterialApp (mobile <600, tablet 600-1200, desktop >1200)
+- [ ] Set up responsive wrapper with max content width constraints
+
+### US-47: Adaptive Navigation
+- [ ] Replace BottomNavigationBar with adaptive navigation (bottom tabs on mobile, NavigationRail on tablet)
+- [ ] Ensure navigation state persists across layout changes
+- [ ] Test orientation changes (portrait ↔ landscape)
+
+### US-48: Core Screens Tablet Adaptation
+- [ ] Swipe card stack — constrain max width, center on tablet
+- [ ] Book detail screen — two-column layout on tablet (info left, reviews right)
+- [ ] Liked books grid — increase columns on wider screens (2→3→4)
+- [ ] Search screen — wider search bar, grid results on tablet
+- [ ] Profile/settings — constrained width, centered layout
+
+### US-49: Secondary Screens Tablet Adaptation
+- [ ] Onboarding flow — constrained width, centered content
+- [ ] Reading lists — grid layout on tablet
+- [ ] Analytics dashboard — side-by-side charts on tablet
+- [ ] Subscription/payment screens — constrained width
+- [ ] Legal pages (privacy, terms) — readable line width
+
+### US-50: Landscape & Foldable Support
+- [ ] Enable and handle landscape orientation on all screens
+- [ ] Test foldable device behavior (Android)
+- [ ] Ensure swipe gestures work in landscape
+
+### US-51: Tablet Testing & QA
+- [ ] Test on iPad simulator (multiple sizes: iPad Mini, iPad Air, iPad Pro)
+- [ ] Test on Android tablet emulator (10", 12")
+- [ ] Test on Chromebook if possible
+- [ ] Test landscape on all device types
+- [ ] Screenshot validation for store listings (tablet sizes)
+
 ## P6 — App Store Publication (NEXT)
 
 ### Track 1: Billing Migration ✅ COMPLETE
