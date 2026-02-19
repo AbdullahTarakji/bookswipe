@@ -45,8 +45,8 @@ class _BookListDetailScreenState extends ConsumerState<BookListDetailScreen> {
   bool get _isOwner {
     // Check if current user owns this list
     final auth = ref.read(authStateProvider);
-    final userId = auth.valueOrNull?['id'];
-    return userId != null && _listData?['user_id'] == userId;
+    final userId = auth.valueOrNull?.id;
+    return userId != null && _listData?['user_id'].toString() == userId;
   }
 
   @override

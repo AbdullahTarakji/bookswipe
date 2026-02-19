@@ -91,11 +91,11 @@ async def send_weekly_digest_emails(ctx: dict) -> int:
     """
     from datetime import datetime, timedelta, timezone
 
-    from sqlalchemy import distinct, func
+    from sqlalchemy import func
 
     from app.config import settings
     from app.database import SessionLocal
-    from app.models import LikedBook, NotificationPreference, SkippedBook, SwipeEvent, User
+    from app.models import LikedBook, NotificationPreference, SwipeEvent, User
     from app.services.email_service import send_email
     from app.services.email_templates import render_weekly_digest
 

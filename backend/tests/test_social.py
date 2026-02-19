@@ -337,7 +337,7 @@ def test_browse_public_lists(client):
     resp = client.get("/api/book-lists/public/browse", headers=h2)
     assert resp.status_code == 200
     data = resp.json()
-    names = [l["name"] for l in data["lists"]]
+    names = [lst["name"] for lst in data["lists"]]
     assert "Public One" in names
     assert "Private One" not in names
 
@@ -348,7 +348,7 @@ def test_browse_public_lists_excludes_own(client):
     client.post("/api/book-lists", headers=h2, json={"name": "Bob Public"})
     # Alice should not see her own lists in browse
     resp = client.get("/api/book-lists/public/browse", headers=h1)
-    names = [l["name"] for l in resp.json()["lists"]]
+    names = [lst["name"] for lst in resp.json()["lists"]]
     assert "Alice Public" not in names
     assert "Bob Public" in names
 

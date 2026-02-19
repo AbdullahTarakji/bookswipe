@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import re
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.models import User

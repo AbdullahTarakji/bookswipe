@@ -22,9 +22,7 @@ from app.schemas import (
     SubscriptionResponse,
     SwipeLimitResponse,
 )
-from app.schemas import PlatformType
 from app.services.auth import get_current_user
-from app.services.revenuecat_service import check_premium_entitlement
 import stripe as stripe_lib
 from app.services.stripe_service import (
     cancel_subscription,

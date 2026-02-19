@@ -3,9 +3,9 @@
 import hashlib
 import hmac
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-import pytest
+from httpx import Response
 from fastapi.testclient import TestClient
 
 from app.config import settings

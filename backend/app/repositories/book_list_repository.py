@@ -94,7 +94,9 @@ class BookListRepository:
             .all()
         )
 
-    def get_public_lists(self, page: int, page_size: int, exclude_user_id: int | None = None) -> tuple[list[BookList], int]:
+    def get_public_lists(
+        self, page: int, page_size: int, exclude_user_id: int | None = None,
+    ) -> tuple[list[BookList], int]:
         """Return paginated public book lists, optionally excluding a user."""
         query = self.db.query(BookList).filter(BookList.is_public.is_(True))
         if exclude_user_id is not None:

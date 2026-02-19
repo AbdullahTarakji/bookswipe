@@ -33,7 +33,6 @@ def test_delete_account_cancels_subscription(client, db_session):
     """Account deletion should cancel active subscriptions."""
     from app.models import User
     from app.services.auth import create_access_token, hash_password
-    import datetime
 
     user = User(
         email="premium@example.com",

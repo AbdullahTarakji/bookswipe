@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session

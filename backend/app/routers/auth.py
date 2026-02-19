@@ -198,13 +198,14 @@ def delete_account(current_user: User = Depends(get_current_user), db: Session =
     # Send confirmation email before deletion (best effort)
     try:
         from app.services.email_service import send_email
-        from app.config import settings as app_settings
 
         send_email(
             original_email,
             "BookSwipe — Account Deleted",
-            f"<p>Your BookSwipe account ({original_email}) has been deleted and your personal data has been anonymized.</p>"
-            f"<p>If you did not request this, please contact us at support@bookswipe.app.</p>",
+            f"<p>Your BookSwipe account ({original_email}) has been deleted "
+            f"and your personal data has been anonymized.</p>"
+            f"<p>If you did not request this, please contact us at "
+            f"support@bookswipe.app.</p>",
         )
     except Exception:
         logger.warning("Failed to send account deletion email to %s", original_email)

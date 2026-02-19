@@ -1,12 +1,9 @@
 """Tests for the analytics dashboard endpoints."""
 
-import datetime
 
-import pytest
 from fastapi.testclient import TestClient
 
-from app.models import LikedBook, SkippedBook, SwipeEvent, User
-from tests.conftest import VALID_TEST_PASSWORD
+from app.models import LikedBook, SwipeEvent
 
 
 class TestAnalyticsPermissions:

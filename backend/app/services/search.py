@@ -9,7 +9,6 @@ import httpx
 from app.config import settings
 from app.repositories.search_repository import SearchRepository
 from app.schemas import (
-    AutocompleteResponse,
     BookSearchResult,
     ListSearchResult,
     SearchFilters,

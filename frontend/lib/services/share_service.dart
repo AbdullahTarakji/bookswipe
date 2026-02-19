@@ -14,8 +14,8 @@ class ShareService {
       final data = await _api.getShareBook(googleBookId);
       final url = data['short_url'] ?? data['url'];
       final title = data['og']?['og_title'] ?? 'Check out this book';
-      await SharePlus.instance.share(
-        ShareParams(text: '$title\n$url'),
+      await Share.share(
+        '$title\n$url',
       );
     } catch (e) {
       if (context.mounted) {
@@ -32,8 +32,8 @@ class ShareService {
       final data = await _api.getShareList(listId);
       final url = data['short_url'] ?? data['url'];
       final title = data['og']?['og_title'] ?? 'Check out this reading list';
-      await SharePlus.instance.share(
-        ShareParams(text: '$title\n$url'),
+      await Share.share(
+        '$title\n$url',
       );
     } catch (e) {
       if (context.mounted) {
@@ -50,8 +50,8 @@ class ShareService {
       final data = await _api.getShareUser(userId);
       final url = data['short_url'] ?? data['url'];
       final title = data['og']?['og_title'] ?? 'Check out this profile';
-      await SharePlus.instance.share(
-        ShareParams(text: '$title\n$url'),
+      await Share.share(
+        '$title\n$url',
       );
     } catch (e) {
       if (context.mounted) {

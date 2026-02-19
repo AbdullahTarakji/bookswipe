@@ -1,16 +1,15 @@
 """Tests for the share / deep links feature."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models import BookList, BookListItem, ShortLink, User
+from app.models import BookList, User
 from app.services.share import render_og_html, share_book, share_list, share_user
 from app.schemas import OGMetadata
 
-from tests.conftest import VALID_TEST_PASSWORD, TestingSessionLocal, MOCK_GOOGLE_BOOK_DETAIL_RESPONSE
+from tests.conftest import VALID_TEST_PASSWORD, TestingSessionLocal
 
 
 @pytest.fixture()

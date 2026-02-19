@@ -7,3 +7,4 @@ select = ["E", "F", "W"]
 
 [tool.ruff.lint.per-file-ignores]
 "alembic/*" = ["E402", "F401", "W291"]
+"app/services/email_templates.py" = ["E501"]

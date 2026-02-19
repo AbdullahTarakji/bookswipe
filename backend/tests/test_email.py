@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.services.email_service import (
     ConsoleBackend,
     EmailBackend,

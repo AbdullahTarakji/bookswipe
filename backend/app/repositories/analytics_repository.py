@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import datetime
 
-from sqlalchemy import distinct, func, case, literal_column
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.models import (
-    DailySwipeCount,
     LikedBook,
-    SkippedBook,
     SwipeEvent,
     User,
 )

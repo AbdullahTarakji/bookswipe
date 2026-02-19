@@ -385,7 +385,9 @@ class ReviewVote(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    review_id: Mapped[int] = mapped_column(ForeignKey("book_reviews.id", ondelete="CASCADE"), nullable=False, index=True)
+    review_id: Mapped[int] = mapped_column(
+        ForeignKey("book_reviews.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     review: Mapped[BookReview] = relationship(back_populates="votes")
