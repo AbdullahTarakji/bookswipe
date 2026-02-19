@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A00E0"/>
+      <stop offset="100%" style="stop-color:#8E2DE2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- Open book -->
+  <g transform="translate(512, 480)" fill="none" stroke="white" stroke-width="36" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left page -->
+    <path d="M-20,-140 C-20,-140 -200,-170 -260,-120 L-260,140 C-200,90 -20,120 -20,120"/>
+    <!-- Right page -->
+    <path d="M20,-140 C20,-140 200,-170 260,-120 L260,140 C200,90 20,120 20,120"/>
+    <!-- Spine -->
+    <line x1="0" y1="-140" x2="0" y2="120"/>
+  </g>
+
+  <!-- Swipe arrow (curved right arrow) -->
+  <g transform="translate(512, 720)" fill="none" stroke="white" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-100,0 Q0,-60 100,0"/>
+    <polyline points="60,-30 100,0 60,30"/>
+  </g>
+</svg>
