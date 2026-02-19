@@ -5,6 +5,7 @@ import '../providers/notification_providers.dart';
 import '../providers/providers.dart';
 import '../providers/subscription_provider.dart';
 import '../services/revenuecat_service.dart';
+import '../widgets/responsive_container.dart';
 
 Future<void> _showDeleteAccountDialog(BuildContext context, WidgetRef ref) async {
   final confirmed = await showDialog<bool>(
@@ -111,7 +112,9 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
+      body: ResponsiveContainer(
+        maxWidth: 600,
+        child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const SizedBox(height: 20),
@@ -274,6 +277,7 @@ class ProfileScreen extends ConsumerWidget {
             label: Text('Delete Account', style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
+      ),
       ),
     );
   }

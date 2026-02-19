@@ -13,6 +13,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/swipe_overlay.dart';
+import '../widgets/responsive_container.dart';
 import '../widgets/swipe_snackbar.dart';
 
 /// Main discovery screen — Swipe-style full-screen card swiping.
@@ -80,9 +81,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.75,
-                        child: _buildCardArea(books),
+                      child: ResponsiveContainer(
+                        maxWidth: 500,
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.75,
+                          child: _buildCardArea(books),
+                        ),
                       ),
                     ),
                   );

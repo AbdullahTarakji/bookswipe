@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/social_providers.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
+import '../widgets/responsive_container.dart';
 import '../widgets/shimmer_loading.dart';
 
 /// Displays the user's book lists and public lists with tabs.
@@ -122,16 +123,32 @@ class _MyListsTab extends ConsumerWidget {
             subtitle: 'Create a list to organize your reading',
           );
         }
+        final isTablet = ResponsiveContainer.isTablet(context);
         return RefreshIndicator(
           onRefresh: () => ref.read(bookListsProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: lists.length,
-            itemBuilder: (context, index) {
-              final list = lists[index];
-              return _BookListTile(list: list, theme: theme, canDelete: true);
-            },
-          ),
+          child: isTablet
+              ? GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 3.5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: lists.length,
+                  itemBuilder: (context, index) {
+                    final list = lists[index];
+                    return _BookListTile(list: list, theme: theme, canDelete: true);
+                  },
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: lists.length,
+                  itemBuilder: (context, index) {
+                    final list = lists[index];
+                    return _BookListTile(list: list, theme: theme, canDelete: true);
+                  },
+                ),
         );
       },
     );
@@ -160,16 +177,32 @@ class _PublicListsTab extends ConsumerWidget {
             subtitle: 'Public lists from other users will appear here',
           );
         }
+        final isTablet = ResponsiveContainer.isTablet(context);
         return RefreshIndicator(
           onRefresh: () => ref.read(publicListsProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: lists.length,
-            itemBuilder: (context, index) {
-              final list = lists[index];
-              return _BookListTile(list: list, theme: theme, canDelete: false);
-            },
-          ),
+          child: isTablet
+              ? GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 3.5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: lists.length,
+                  itemBuilder: (context, index) {
+                    final list = lists[index];
+                    return _BookListTile(list: list, theme: theme, canDelete: false);
+                  },
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: lists.length,
+                  itemBuilder: (context, index) {
+                    final list = lists[index];
+                    return _BookListTile(list: list, theme: theme, canDelete: false);
+                  },
+                ),
         );
       },
     );

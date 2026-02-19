@@ -7,6 +7,7 @@ import '../providers/social_providers.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/review_section.dart';
+import '../widgets/responsive_container.dart';
 import '../widgets/swipe_snackbar.dart';
 
 /// Full-page book detail screen with Hero cover animation and shimmer loading.
@@ -46,6 +47,11 @@ class BookDetailScreen extends ConsumerWidget {
     bool isLiked,
   ) {
     final theme = Theme.of(context);
+    final isTablet = ResponsiveContainer.isTablet(context);
+
+    if (isTablet) {
+      return _buildTabletLayout(context, ref, theme, book, isLiked);
+    }
 
     return CustomScrollView(
       slivers: [
@@ -152,6 +158,131 @@ class BookDetailScreen extends ConsumerWidget {
                 ],
                 ReviewSection(bookId: book.id),
                 const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Two-column layout for tablet: cover + info on left, description + reviews on right.
+  Widget _buildTabletLayout(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    Book book,
+    bool isLiked,
+  ) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share',
+              onPressed: () {
+                ref.read(shareServiceProvider).shareBook(context, book.id);
+              },
+            ),
+          ],
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column: cover + basic info
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Hero(
+                        tag: 'book-cover-${book.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: AspectRatio(
+                            aspectRatio: 2 / 3,
+                            child: book.thumbnailUrl != null
+                                ? Image.network(
+                                    book.highResThumbnail,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      color: theme.colorScheme.surfaceContainerHighest,
+                                      child: const Center(child: Icon(Icons.broken_image, size: 80)),
+                                    ),
+                                  )
+                                : Container(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: const Center(child: Icon(Icons.book, size: 80)),
+                                  ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        book.title,
+                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        book.authorsText,
+                        style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildMetadataRow(theme, book),
+                      const SizedBox(height: 20),
+                      _buildLikeButton(context, ref, book, isLiked),
+                      const SizedBox(height: 8),
+                      _buildAddToListButton(context, ref, book),
+                      if (book.categories.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: book.categories.map((c) => Chip(label: Text(c))).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                // Right column: description + publication info + reviews
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (book.description != null) ...[
+                        Text(
+                          'Description',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          book.description!,
+                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
+                        ),
+                      ],
+                      if (book.publisher != null || book.publishedDate != null) ...[
+                        const SizedBox(height: 20),
+                        Text(
+                          'Publication Info',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        if (book.publisher != null)
+                          _buildInfoRow(Icons.business, 'Publisher', book.publisher!),
+                        if (book.publishedDate != null)
+                          _buildInfoRow(Icons.calendar_today, 'Published', book.publishedDate!),
+                      ],
+                      ReviewSection(bookId: book.id),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

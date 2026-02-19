@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
+import '../widgets/responsive_container.dart';
 
 /// Detailed analytics dashboard accessible from the admin panel.
 class AnalyticsDashboardScreen extends ConsumerWidget {
@@ -60,6 +61,7 @@ class _AnalyticsContent extends StatelessWidget {
     final popularBooks = data['popular_books'] as Map<String, dynamic>? ?? {};
     final retention = data['retention'] as Map<String, dynamic>? ?? {};
     final categories = data['categories'] as Map<String, dynamic>? ?? {};
+    final isTablet = ResponsiveContainer.isTablet(context);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -69,33 +71,81 @@ class _AnalyticsContent extends StatelessWidget {
         const SizedBox(height: 12),
         _EngagementCards(engagement: engagement),
         const SizedBox(height: 16),
-        _SignupsChart(
-          signups: (engagement['signups_over_time'] as List<dynamic>?) ?? [],
-        ),
-        const SizedBox(height: 24),
 
-        // ── Swipe Stats Section ──
-        const _SectionHeader(title: 'Swipe Statistics', icon: Icons.swipe),
-        const SizedBox(height: 12),
-        _SwipeCards(swipes: swipes),
-        const SizedBox(height: 16),
-        _SwipesOverTimeChart(
-          swipes: (swipes['swipes_over_time'] as List<dynamic>?) ?? [],
-        ),
+        // ── Charts: side-by-side on tablet ──
+        if (isTablet)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _SignupsChart(
+                  signups: (engagement['signups_over_time'] as List<dynamic>?) ?? [],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _SwipesOverTimeChart(
+                  swipes: (swipes['swipes_over_time'] as List<dynamic>?) ?? [],
+                ),
+              ),
+            ],
+          )
+        else ...[
+          _SignupsChart(
+            signups: (engagement['signups_over_time'] as List<dynamic>?) ?? [],
+          ),
+          const SizedBox(height: 24),
+          // ── Swipe Stats Section ──
+          const _SectionHeader(title: 'Swipe Statistics', icon: Icons.swipe),
+          const SizedBox(height: 12),
+          _SwipeCards(swipes: swipes),
+          const SizedBox(height: 16),
+          _SwipesOverTimeChart(
+            swipes: (swipes['swipes_over_time'] as List<dynamic>?) ?? [],
+          ),
+        ],
+
+        if (isTablet) ...[
+          const SizedBox(height: 24),
+          const _SectionHeader(title: 'Swipe Statistics', icon: Icons.swipe),
+          const SizedBox(height: 12),
+          _SwipeCards(swipes: swipes),
+        ],
         const SizedBox(height: 24),
 
         // ── Popular Books Section ──
         const _SectionHeader(title: 'Popular Books', icon: Icons.auto_awesome),
         const SizedBox(height: 12),
-        _PopularBooksList(
-          title: 'Most Liked',
-          books: (popularBooks['most_liked'] as List<dynamic>?) ?? [],
-        ),
-        const SizedBox(height: 12),
-        _PopularBooksList(
-          title: 'Trending This Week',
-          books: (popularBooks['trending_this_week'] as List<dynamic>?) ?? [],
-        ),
+        if (isTablet)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _PopularBooksList(
+                  title: 'Most Liked',
+                  books: (popularBooks['most_liked'] as List<dynamic>?) ?? [],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _PopularBooksList(
+                  title: 'Trending This Week',
+                  books: (popularBooks['trending_this_week'] as List<dynamic>?) ?? [],
+                ),
+              ),
+            ],
+          )
+        else ...[
+          _PopularBooksList(
+            title: 'Most Liked',
+            books: (popularBooks['most_liked'] as List<dynamic>?) ?? [],
+          ),
+          const SizedBox(height: 12),
+          _PopularBooksList(
+            title: 'Trending This Week',
+            books: (popularBooks['trending_this_week'] as List<dynamic>?) ?? [],
+          ),
+        ],
         const SizedBox(height: 24),
 
         // ── Retention Section ──
@@ -192,7 +242,8 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final width = (MediaQuery.of(context).size.width - 44) / 2;
+    final isTablet = ResponsiveContainer.isTablet(context);
+    final width = (MediaQuery.of(context).size.width - (isTablet ? 56 : 44)) / (isTablet ? 3 : 2);
 
     return SizedBox(
       width: width,

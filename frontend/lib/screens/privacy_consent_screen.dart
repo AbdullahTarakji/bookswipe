@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/providers.dart';
+import '../widgets/responsive_container.dart';
 
 /// Key used to track whether the user has seen the consent screen.
 const _consentShownKey = 'privacy_consent_shown';
@@ -37,7 +38,9 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: ResponsiveContainer(
+          maxWidth: 500,
+          child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,6 +95,7 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
