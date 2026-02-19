@@ -65,7 +65,7 @@ class _ReviewSectionState extends ConsumerState<ReviewSection> {
               StarRating(rating: (avgRating as num).toDouble(), size: 28),
               const SizedBox(width: 8),
               Text(
-                '${(avgRating as num).toStringAsFixed(1)} ($totalRatings ${totalRatings == 1 ? 'rating' : 'ratings'})',
+                '${avgRating.toStringAsFixed(1)} ($totalRatings ${totalRatings == 1 ? 'rating' : 'ratings'})',
                 style: theme.textTheme.titleMedium,
               ),
             ],

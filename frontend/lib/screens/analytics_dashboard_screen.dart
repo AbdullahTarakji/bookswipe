@@ -55,7 +55,6 @@ class _AnalyticsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final engagement = data['engagement'] as Map<String, dynamic>? ?? {};
     final swipes = data['swipes'] as Map<String, dynamic>? ?? {};
     final popularBooks = data['popular_books'] as Map<String, dynamic>? ?? {};

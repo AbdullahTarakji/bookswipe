@@ -541,6 +541,7 @@ class BookListItemResponse(BaseModel):
     id: int
     book_id: str
     note: str = ""
+    position: int | None = None
     added_at: datetime.datetime
 
     model_config = {"from_attributes": True}
@@ -745,7 +746,7 @@ class TrendingSearchesResponse(BaseModel):
 class OGMetadata(BaseModel):
     og_title: str = ""
     og_description: str = ""
-    og_image: str = ""
+    og_image: str | None = None
     og_type: str = ""
     og_url: str = ""
 
@@ -759,7 +760,7 @@ class ShareResponse(BaseModel):
 # ── Social (additional) ─────────────────────────────────────
 
 class BookListReorder(BaseModel):
-    item_ids: list[int]
+    book_ids: list[str]
 
 
 # ── Analytics (admin) ────────────────────────────────────────
@@ -776,26 +777,29 @@ class CategoryBreakdown(BaseModel):
 
 class SwipeStats(BaseModel):
     total_swipes: int = 0
-    likes: int = 0
-    skips: int = 0
-    like_rate: float = 0.0
+    total_likes: int = 0
+    total_skips: int = 0
+    like_ratio: float = 0.0
+    skip_ratio: float = 0.0
+    swipes_per_user_avg: float = 0.0
+    swipes_over_time: list[dict] = []
 
 
 class PopularBooks(BaseModel):
     most_liked: list[dict] = []
     most_swiped: list[dict] = []
+    trending_this_week: list[dict] = []
 
 
 class EngagementMetrics(BaseModel):
-    total_users: int = 0
-    active_users_today: int = 0
-    active_users_week: int = 0
-    avg_swipes_per_user: float = 0.0
+    dau: int = 0
+    wau: int = 0
+    mau: int = 0
+    signups_over_time: list[dict] = []
 
 
 class RetentionData(BaseModel):
-    daily: list[dict] = []
-    weekly: list[dict] = []
+    cohorts: list[dict] = []
 
 
 class DetailedAnalyticsResponse(BaseModel):

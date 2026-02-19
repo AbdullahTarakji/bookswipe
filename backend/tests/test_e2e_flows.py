@@ -74,7 +74,7 @@ class TestAuthFlowE2E:
         assert me5.status_code == 200
 
     def test_register_login_delete_reregister(self, client):
-        """Register, soft-delete account, then verify re-registration is blocked."""
+        """Register, soft-delete account, then verify re-registration succeeds."""
         # Register
         reg = client.post("/api/auth/register", json={
             "email": "delete_me@example.com",
@@ -98,12 +98,12 @@ class TestAuthFlowE2E:
         })
         assert login.status_code == 401
 
-        # Re-registration with same email should be blocked (soft-deleted record exists)
+        # Re-registration with same email succeeds (soft-deleted/anonymized account)
         re_reg = client.post("/api/auth/register", json={
             "email": "delete_me@example.com",
             "password": VALID_TEST_PASSWORD,
         })
-        assert re_reg.status_code == 409
+        assert re_reg.status_code == 201
 
 
 class TestBookDiscoveryFlowE2E:
