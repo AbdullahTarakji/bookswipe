@@ -58,14 +58,14 @@
 - [ ] Content rating questionnaires (needs store accounts)
 - [ ] Export compliance declaration (needs store accounts)
 
-### Track 3: Store Assets & Config (after Track 1 & 2)
-- [ ] App icon — 1024x1024 source, generate all sizes
-- [ ] Screenshots — all iPhone sizes + Android phone/tablet
-- [ ] Feature graphic (Google Play) — 1024x500
-- [ ] App name, subtitle, description, keywords
-- [ ] App preview video (optional but recommended)
-- [ ] Store category selection
-- [ ] Demo account for Apple App Review
+### Track 3: Store Assets & Config ✅ COMPLETE
+- [x] App icon — SVG source + flutter_launcher_icons config
+- [x] Screenshot guide — 8 screenshots, all device sizes, captions
+- [x] Feature graphic concept (Google Play) — 1024x500
+- [x] Store listings — ASO-optimized for both Apple & Google (docs/STORE_LISTING.md)
+- [x] App preview video script — 20-sec scene-by-scene breakdown
+- [x] Store setup checklists (docs/STORE_CONFIG.md)
+- [ ] Demo account for Apple App Review (create at submission time)
 
 ### Track 4: Store Accounts & Submission (LAST STEP — requires Abed)
 - [ ] Apple Developer Program enrollment ($99/year)
