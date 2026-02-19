@@ -82,6 +82,18 @@ class _FakeLikedBooksNotifier extends LikedBooksNotifier {
   Future<List<Book>> build() async => _books;
 }
 
+/// Force a narrow mobile screen size to avoid triggering the tablet layout.
+Future<void> _setMobileSize(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(500, 800));
+  tester.view.physicalSize = const Size(500, 800);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() async {
+    await tester.binding.setSurfaceSize(null);
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+}
+
 void main() {
   late MockApiService mockApi;
   late MockAuthService mockAuth;
@@ -94,6 +106,7 @@ void main() {
 
   group('BookDetailScreen', () {
     testWidgets('shows book title and authors', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -106,6 +119,7 @@ void main() {
     });
 
     testWidgets('shows book metadata (rating, pages)', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -119,6 +133,7 @@ void main() {
     });
 
     testWidgets('shows description section', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -131,6 +146,7 @@ void main() {
     });
 
     testWidgets('shows category chips', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -143,6 +159,7 @@ void main() {
     });
 
     testWidgets('shows publication info', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -156,6 +173,7 @@ void main() {
     });
 
     testWidgets('shows like button when not liked', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -169,6 +187,7 @@ void main() {
     });
 
     testWidgets('shows unlike button when already liked', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -182,6 +201,7 @@ void main() {
     });
 
     testWidgets('shows loading state', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -194,6 +214,7 @@ void main() {
     });
 
     testWidgets('shows error state with retry', (tester) async {
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -214,6 +235,7 @@ void main() {
         authors: ['Author'],
       );
 
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
@@ -232,6 +254,7 @@ void main() {
         authors: ['Author'],
       );
 
+      await _setMobileSize(tester);
       await tester.pumpWidget(_buildBookDetailScreen(
         api: mockApi,
         auth: mockAuth,
