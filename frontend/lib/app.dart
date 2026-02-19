@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'main.dart';
+import 'widgets/adaptive_scaffold.dart';
 import 'screens/activity_feed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/analytics_dashboard_screen.dart';
@@ -206,15 +207,13 @@ class AppShell extends ConsumerWidget {
     final selectedIndex = _calculateSelectedIndex(context, isAdmin);
     final destinations = _buildDestinations(isAdmin);
 
-    return Scaffold(
+    return AdaptiveScaffold(
       body: ErrorBoundary(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
-          _onDestinationSelected(context, index, isAdmin);
-        },
-        destinations: destinations,
-      ),
+      selectedIndex: selectedIndex,
+      onDestinationSelected: (index) {
+        _onDestinationSelected(context, index, isAdmin);
+      },
+      destinations: destinations,
     );
   }
 
