@@ -84,7 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: ResponsiveContainer(
                         maxWidth: 500,
                         child: SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.75,
+                          height: _cardAreaHeight(context),
                           child: _buildCardArea(books),
                         ),
                       ),
@@ -97,6 +97,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// Compute card area height — capped in landscape to avoid overflow.
+  double _cardAreaHeight(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
+    final proportional = size.height * 0.75;
+    // In landscape, cap height so cards don't overflow the viewport
+    return isLandscape ? proportional.clamp(0, size.height * 0.85) : proportional;
   }
 
   // ── Card area with swiper + action buttons ──
