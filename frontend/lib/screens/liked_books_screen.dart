@@ -7,6 +7,7 @@ import '../widgets/book_list_tile.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
 import '../widgets/shimmer_loading.dart';
+import '../widgets/responsive_container.dart';
 import '../widgets/swipe_snackbar.dart';
 
 /// Screen displaying the user's liked/favorited books.
@@ -49,29 +50,59 @@ class LikedBooksScreen extends ConsumerWidget {
             );
           }
 
+          final isTablet = ResponsiveContainer.isTablet(context);
+
           return RefreshIndicator(
             color: AppTheme.brandRed,
             onRefresh: () async {
               ref.read(likedBooksProvider.notifier).refresh();
             },
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: books.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 2),
-              itemBuilder: (context, index) {
-                final book = books[index];
-                return BookListTile(
-                  book: book,
-                  onTap: () => context.push('/book/${book.id}'),
-                  onDismiss: () {
-                    ref
-                        .read(likedBooksProvider.notifier)
-                        .unlikeBook(book.id);
-                    showRemovedFromFavoritesSnackBar(context, book.title);
-                  },
-                );
-              },
-            ),
+            child: isTablet
+                ? GridView.builder(
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 3.0,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: books.length,
+                    itemBuilder: (context, index) {
+                      final book = books[index];
+                      return BookListTile(
+                        book: book,
+                        onTap: () => context.push('/book/${book.id}'),
+                        onDismiss: () {
+                          ref
+                              .read(likedBooksProvider.notifier)
+                              .unlikeBook(book.id);
+                          showRemovedFromFavoritesSnackBar(
+                              context, book.title);
+                        },
+                      );
+                    },
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: books.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: 2),
+                    itemBuilder: (context, index) {
+                      final book = books[index];
+                      return BookListTile(
+                        book: book,
+                        onTap: () => context.push('/book/${book.id}'),
+                        onDismiss: () {
+                          ref
+                              .read(likedBooksProvider.notifier)
+                              .unlikeBook(book.id);
+                          showRemovedFromFavoritesSnackBar(
+                              context, book.title);
+                        },
+                      );
+                    },
+                  ),
           );
         },
       ),

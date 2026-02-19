@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/providers.dart';
+import '../widgets/responsive_container.dart';
 
 class PrivacySettingsScreen extends ConsumerStatefulWidget {
   const PrivacySettingsScreen({super.key});
@@ -92,7 +93,9 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
       appBar: AppBar(title: const Text('Privacy Settings')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
+          : ResponsiveContainer(
+              maxWidth: 700,
+              child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 Text('Data & Consent', style: theme.textTheme.titleMedium),
@@ -128,6 +131,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
                   onTap: _exporting ? null : _exportData,
                 ),
               ],
+            ),
             ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/category.dart';
 import '../providers/onboarding_provider.dart';
 import '../providers/providers.dart';
+import '../widgets/responsive_container.dart';
 
 /// Screen for selecting favourite genres during onboarding.
 /// Requires at least 3 selections before proceeding.
@@ -60,7 +61,9 @@ class _GenreSelectionScreenState extends ConsumerState<GenreSelectionScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: ResponsiveContainer(
+        maxWidth: 500,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -164,6 +167,7 @@ class _GenreSelectionScreenState extends ConsumerState<GenreSelectionScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

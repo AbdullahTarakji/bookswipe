@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
+import '../widgets/responsive_container.dart';
 import 'genre_selection_screen.dart';
 
 /// Welcome onboarding flow with 3 pages + genre selection.
@@ -65,7 +66,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: ResponsiveContainer(
+          maxWidth: 500,
+          child: Column(
           children: [
             // Skip button
             Align(
@@ -151,6 +154,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

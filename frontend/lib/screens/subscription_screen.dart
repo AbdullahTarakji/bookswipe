@@ -11,6 +11,7 @@ import '../providers/providers.dart';
 import '../providers/subscription_provider.dart';
 import '../services/api_service.dart';
 import '../services/revenuecat_service.dart';
+import '../widgets/responsive_container.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -215,7 +216,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Subscription')),
-      body: ListView(
+      body: ResponsiveContainer(
+        maxWidth: 500,
+        child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           // Current plan card
@@ -247,6 +250,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           // Legal links
           _buildLegalLinks(theme),
         ],
+      ),
       ),
     );
   }

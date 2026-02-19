@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/responsive_container.dart';
 
 /// Unified search screen with filter chips, recent searches, and tabbed results.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -178,7 +179,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       body: Column(
         children: [
           // Search bar
-          Padding(
+          ResponsiveContainer(
+            maxWidth: 600,
+            child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -238,6 +241,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                   ),
               ],
             ),
+          ),
           ),
 
           // Suggestions dropdown
