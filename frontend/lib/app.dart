@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import 'main.dart';
 import 'screens/activity_feed_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
@@ -188,6 +189,14 @@ class BookSwipeApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) => ResponsiveBreakpoints.builder(
+        child: child!,
+        breakpoints: [
+          const Breakpoint(start: 0, end: 599, name: MOBILE),
+          const Breakpoint(start: 600, end: 1199, name: TABLET),
+          const Breakpoint(start: 1200, end: double.infinity, name: DESKTOP),
+        ],
+      ),
     );
   }
 }
